@@ -1,4 +1,4 @@
-import { ArrowRight, Boxes, BrainCircuit, GitBranch, Layers3, Route, Sparkles } from "lucide-react";
+import { ArrowRight, Boxes, BrainCircuit, GitBranch, Github, Layers3, Route, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const capabilityCards = [
@@ -27,7 +27,7 @@ const capabilityCards = [
     accent: "bg-[#9DD6CB] text-[#173A35]"
   },
   {
-    name: "harness",
+    name: "Harness",
     title: "生成与验收分离",
     description: "独立 Evaluator 负责校验，配合 Reflection 纠错，给长链路任务加上安全边界。",
     icon: Route,
@@ -58,7 +58,7 @@ export function HomePage() {
         className="pointer-events-none absolute inset-0 opacity-[0.18] [background-image:linear-gradient(rgba(31,24,38,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(31,24,38,0.08)_1px,transparent_1px)] [background-size:48px_48px]"
       />
       <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-10">
-        <nav className="flex items-center justify-between">
+        <nav className="flex items-center justify-between lg:-mx-20 xl:-mx-28 2xl:-mx-36">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1F1826] text-[#F8F1E7] shadow-[0_16px_34px_rgba(31,24,38,0.18)]">
               <Sparkles className="h-5 w-5" />
@@ -68,13 +68,16 @@ export function HomePage() {
               <p className="text-xs text-[#756676]">AI Agent 编排系统</p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate("/chat")}
-            className="hidden rounded-full border border-[#1F1826]/14 bg-white/70 px-5 py-2.5 text-sm font-medium text-[#1F1826] shadow-[0_12px_28px_rgba(31,24,38,0.08)] transition hover:-translate-y-0.5 hover:bg-white sm:inline-flex"
+          <a
+            href="https://github.com/Swing-G/LiuGuang"
+            target="_blank"
+            rel="noreferrer"
+            className="hidden items-center gap-2 rounded-full border border-[#1F1826]/14 bg-white/70 px-4 py-2.5 text-sm font-medium text-[#1F1826] shadow-[0_12px_28px_rgba(31,24,38,0.08)] transition hover:-translate-y-0.5 hover:bg-white sm:inline-flex"
+            aria-label="打开流光 GitHub 仓库"
           >
-            进入对话
-          </button>
+            <Github className="h-4 w-4" />
+            GitHub
+          </a>
         </nav>
 
         <section className="grid flex-1 items-center gap-12 py-14 lg:grid-cols-[0.92fr_1.08fr] lg:py-8">
