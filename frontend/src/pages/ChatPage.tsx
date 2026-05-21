@@ -20,7 +20,7 @@ export function ChatPage() {
     selectSession,
     createSession
   } = useChatStore();
-  const showWelcome = messages.length === 0 && !isLoading;
+  const showWelcome = false;
   const [sessionsReady, setSessionsReady] = React.useState(false);
   const sessionExists = React.useMemo(() => {
     if (!sessionId) return false;
@@ -84,8 +84,8 @@ export function ChatPage() {
           />
         </div>
         {showWelcome ? null : (
-          <div className="relative z-20 border-t border-[oklch(0.88_0.012_250)]/70 bg-[oklch(0.985_0.004_250)]/88 backdrop-blur-xl">
-            <div className="mx-auto max-w-[820px] px-4 pt-3 pb-4 sm:px-6">
+          <div className="relative z-20 border-t border-white/50 bg-[#FFF9F0]/64 backdrop-blur-2xl">
+            <div className="mx-auto max-w-[860px] px-4 pt-3 pb-4 sm:px-6">
               <ChatInput />
             </div>
           </div>

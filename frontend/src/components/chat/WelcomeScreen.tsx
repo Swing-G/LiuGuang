@@ -125,51 +125,51 @@ export function WelcomeScreen() {
     <div className="relative flex min-h-full items-center justify-center overflow-hidden px-4 py-10 sm:px-6 lg:py-14">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,oklch(0.9_0.055_205/.85),transparent_24%),radial-gradient(circle_at_88%_10%,oklch(0.93_0.075_76/.72),transparent_25%),linear-gradient(140deg,oklch(0.98_0.005_250),oklch(0.94_0.012_250))]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,184,108,0.38),transparent_25%),radial-gradient(circle_at_86%_12%,rgba(139,124,255,0.3),transparent_24%),radial-gradient(circle_at_72%_78%,rgba(65,201,180,0.22),transparent_28%),linear-gradient(140deg,#FFF8EE,#F7F2EA_45%,#EEF2FF)]"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-[0.34] [background-image:linear-gradient(oklch(0.2_0.02_250/.06)_1px,transparent_1px),linear-gradient(90deg,oklch(0.2_0.02_250/.06)_1px,transparent_1px)] [background-size:42px_42px]"
+        className="pointer-events-none absolute inset-0 opacity-[0.26] [background-image:linear-gradient(rgba(39,36,51,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(39,36,51,0.07)_1px,transparent_1px)] [background-size:42px_42px]"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute left-[8%] top-[15%] hidden h-48 w-48 rotate-12 border border-[oklch(0.75_0.055_225)]/50 lg:block"
+        className="pointer-events-none absolute left-[8%] top-[15%] hidden h-48 w-48 rotate-12 rounded-[3rem] border border-[#FFB86C]/38 bg-white/10 lg:block"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-[11%] right-[7%] hidden h-32 w-32 rounded-full border border-[oklch(0.78_0.055_78)]/60 lg:block"
+        className="pointer-events-none absolute bottom-[11%] right-[7%] hidden h-32 w-32 rounded-full border border-[#8B7CFF]/36 bg-white/10 lg:block"
       />
 
       <div className="relative w-full max-w-[1040px]">
         <div className="grid items-end gap-8 lg:grid-cols-[1.04fr_0.96fr]">
           <div className="opacity-0 animate-fade-up" style={{ animationFillMode: "both" }}>
-            <div className="inline-flex items-center gap-2 rounded-xl border border-[oklch(0.84_0.02_225)] bg-[oklch(0.99_0.004_250)]/70 px-3 py-2 text-xs font-semibold tracking-[0.14em] text-[oklch(0.48_0.13_245)] shadow-[0_12px_32px_rgba(31,41,55,0.06)] backdrop-blur-xl">
-              <Orbit className="h-4 w-4" />
-              KNOWLEDGE ORBIT
+            <div className="inline-flex items-center gap-2 rounded-xl border border-white/60 bg-white/58 px-3 py-2 text-xs font-semibold tracking-[0.18em] text-[#6E5D7B] shadow-[0_14px_34px_rgba(58,43,78,0.08)] backdrop-blur-xl">
+              <Orbit className="h-4 w-4 text-[#FF8F70]" />
+              LIU GUANG
             </div>
-            <h1 className="mt-6 max-w-[680px] text-balance font-display text-[clamp(3rem,7vw,6.6rem)] font-semibold leading-[0.9] tracking-[-0.065em] text-[oklch(0.2_0.02_250)]">
-              让知识先抵达，再回答。
+            <h1 className="mt-6 max-w-[680px] text-balance font-display text-[clamp(3rem,7vw,6.6rem)] font-semibold leading-[0.9] tracking-[-0.065em] text-[#251C2D]">
+              让灵感像光一样流动。
             </h1>
-            <p className="mt-6 max-w-[58ch] text-base leading-7 text-[oklch(0.43_0.03_250)] sm:text-lg">
-              Ragent 将检索、推理与表达收束到一次对话里。适合制度问答、资料总结、业务知识追问和复杂问题拆解。
+            <p className="mt-6 max-w-[58ch] text-base leading-7 text-[#5F5268] sm:text-lg">
+              流光把检索、推理与表达融进一个轻盈的对话界面，帮你快速归纳资料、推演方案、延展思路，把零散问题整理成清晰答案。
             </p>
           </div>
 
           <div className="opacity-0 animate-fade-up" style={{ animationDelay: "90ms", animationFillMode: "both" }}>
             <div
               className={cn(
-                "relative overflow-hidden rounded-[2rem] border bg-[oklch(0.995_0.004_250)]/82 p-2 shadow-[0_30px_80px_rgba(31,41,55,0.16)] backdrop-blur-xl transition duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-                isFocused ? "border-[oklch(0.72_0.08_245)]" : "border-[oklch(0.88_0.012_250)]"
+                "relative overflow-hidden rounded-[2rem] border bg-white/62 p-2 shadow-[0_34px_90px_rgba(58,43,78,0.18)] backdrop-blur-xl transition duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                isFocused ? "border-[#FFB86C]/70" : "border-white/62"
               )}
             >
-              <div className="rounded-[1.55rem] border border-[oklch(0.9_0.01_250)] bg-[oklch(0.99_0.004_250)] p-4 shadow-[inset_0_1px_0_oklch(1_0_0/.8)]">
+              <div className="rounded-[1.55rem] border border-white/65 bg-[#FFFDF8]/82 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
                 <div className="relative">
                   <textarea
                     ref={textareaRef}
                     value={value}
                     onChange={(event) => setValue(event.target.value)}
                     placeholder={deepThinkingEnabled ? "输入需要深度分析的问题..." : "输入你的问题..."}
-                    className="max-h-40 min-h-[104px] w-full resize-none border-0 bg-transparent px-1 py-1 text-base leading-7 text-[oklch(0.24_0.02_250)] placeholder:text-[oklch(0.62_0.025_250)] focus:outline-none"
+                    className="max-h-40 min-h-[104px] w-full resize-none border-0 bg-transparent px-1 py-1 text-base leading-7 text-[#251C2D] placeholder:text-[#9A879B] focus:outline-none"
                     rows={3}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
@@ -189,9 +189,9 @@ export function WelcomeScreen() {
                     }}
                     aria-label="发送消息"
                   />
-                  <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-[16px] bg-gradient-to-b from-[oklch(0.99_0.004_250)]/0 to-[oklch(0.99_0.004_250)]" />
+                  <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-[16px] bg-gradient-to-b from-[#FFFDF8]/0 to-[#FFFDF8]" />
                 </div>
-                <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-[oklch(0.9_0.01_250)] pt-4">
+                <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-[#F0E6D8] pt-4">
                   <button
                     type="button"
                     onClick={() => setDeepThinkingEnabled(!deepThinkingEnabled)}
@@ -200,15 +200,15 @@ export function WelcomeScreen() {
                     className={cn(
                       "rounded-xl border px-3 py-2 text-xs font-semibold transition duration-200 active:scale-[0.98]",
                       deepThinkingEnabled
-                        ? "border-[oklch(0.76_0.065_245)] bg-[oklch(0.92_0.04_225)] text-[oklch(0.42_0.13_245)]"
-                        : "border-[oklch(0.88_0.012_250)] bg-[oklch(0.965_0.007_250)] text-[oklch(0.44_0.025_250)] hover:bg-[oklch(0.94_0.01_250)]",
+                        ? "border-[#FFB86C]/60 bg-[#FFF0D6] text-[#8B4B2E]"
+                        : "border-[#EADFD2] bg-white/58 text-[#6E5D7B] hover:bg-white/80",
                       isStreaming && "cursor-not-allowed opacity-60"
                     )}
                   >
                     <span className="inline-flex items-center gap-2">
                       <Brain className="h-4 w-4" />
                       深度思考
-                      {deepThinkingEnabled ? <span className="h-2 w-2 rounded-full bg-[oklch(0.54_0.14_245)] animate-pulse" /> : null}
+                      {deepThinkingEnabled ? <span className="h-2 w-2 rounded-full bg-[#FF8F70] animate-pulse" /> : null}
                     </span>
                   </button>
                   <button
@@ -219,10 +219,10 @@ export function WelcomeScreen() {
                     className={cn(
                       "ml-auto inline-flex h-11 min-w-11 items-center justify-center rounded-xl px-4 text-sm font-semibold transition duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.98]",
                       isStreaming
-                        ? "bg-[oklch(0.93_0.05_25)] text-[oklch(0.58_0.18_25)] hover:bg-[oklch(0.89_0.07_25)]"
+                        ? "bg-[#FFE7E0] text-[#B4533A] hover:bg-[#FFD7CB]"
                         : hasContent
-                          ? "bg-[oklch(0.25_0.045_250)] text-[oklch(0.98_0.004_250)] hover:bg-[oklch(0.31_0.05_250)]"
-                          : "cursor-not-allowed bg-[oklch(0.92_0.01_250)] text-[oklch(0.68_0.02_250)]"
+                          ? "bg-[#251C2D] text-[#FFF8EE] shadow-[0_14px_28px_rgba(37,28,45,0.22)] hover:bg-[#3A2B4E]"
+                          : "cursor-not-allowed bg-[#EFE7DC] text-[#B8A9B5]"
                     )}
                   >
                     {isStreaming ? <Square className="h-4 w-4" /> : <Send className="h-4 w-4" />}
@@ -231,10 +231,10 @@ export function WelcomeScreen() {
                 </div>
               </div>
             </div>
-            <p className="mt-3 text-center text-xs text-[oklch(0.56_0.025_250)]">
-              <kbd className="rounded-md border border-[oklch(0.88_0.012_250)] bg-[oklch(0.99_0.004_250)] px-1.5 py-0.5 text-[oklch(0.42_0.03_250)]">Enter</kbd> 发送
+            <p className="mt-3 text-center text-xs text-[#7B6B83]">
+              <kbd className="rounded-md border border-white/70 bg-white/64 px-1.5 py-0.5 text-[#5C4A66]">Enter</kbd> 发送
               <span className="px-1.5">·</span>
-              <kbd className="rounded-md border border-[oklch(0.88_0.012_250)] bg-[oklch(0.99_0.004_250)] px-1.5 py-0.5 text-[oklch(0.42_0.03_250)]">Shift + Enter</kbd> 换行
+              <kbd className="rounded-md border border-white/70 bg-white/64 px-1.5 py-0.5 text-[#5C4A66]">Shift + Enter</kbd> 换行
               {isStreaming ? <span className="ml-2 animate-pulse-soft">生成中...</span> : null}
             </p>
           </div>
@@ -251,22 +251,22 @@ export function WelcomeScreen() {
                   onClick={() => applyPreset(preset.prompt)}
                   disabled={isStreaming}
                   className={cn(
-                    "group rounded-[1.45rem] border border-[oklch(0.88_0.012_250)] bg-[oklch(0.99_0.004_250)]/72 p-4 text-left shadow-[0_14px_36px_rgba(31,41,55,0.06)] backdrop-blur-xl transition duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-[oklch(0.76_0.065_245)] hover:bg-[oklch(0.995_0.004_250)]",
+                    "group rounded-[1.45rem] border border-white/60 bg-white/56 p-4 text-left shadow-[0_16px_42px_rgba(58,43,78,0.08)] backdrop-blur-xl transition duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:border-[#FFB86C]/60 hover:bg-white/78",
                     isStreaming && "cursor-not-allowed opacity-60"
                   )}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-[0.9rem] bg-[oklch(0.92_0.035_225)] text-[oklch(0.42_0.13_245)]">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-[0.9rem] bg-[#FFF0D6] text-[#B4533A]">
                       <Icon className="h-4 w-4" />
                     </span>
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-[oklch(0.24_0.02_250)]">{preset.title}</p>
-                      <p className="truncate text-xs text-[oklch(0.5_0.025_250)]">{preset.description}</p>
+                      <p className="truncate text-sm font-semibold text-[#251C2D]">{preset.title}</p>
+                      <p className="truncate text-xs text-[#6E5D7B]">{preset.description}</p>
                     </div>
                   </div>
-                  <div className="mt-4 flex items-center gap-2 text-xs text-[oklch(0.56_0.025_250)]">
+                  <div className="mt-4 flex items-center gap-2 text-xs text-[#7B6B83]">
                     <span className="min-w-0 flex-1 truncate">{preset.prompt}</span>
-                    <ArrowUpRight className="h-3.5 w-3.5 text-[oklch(0.65_0.06_245)] transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                    <ArrowUpRight className="h-3.5 w-3.5 text-[#FF8F70] transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                   </div>
                 </button>
               );

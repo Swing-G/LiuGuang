@@ -1,6 +1,7 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import { LoginPage } from "@/pages/LoginPage";
+import { HomePage } from "@/pages/HomePage";
 import { ChatPage } from "@/pages/ChatPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { AdminLayout } from "@/pages/admin/AdminLayout";
@@ -53,8 +54,7 @@ function RedirectIfAuth({ children }: { children: JSX.Element }) {
 }
 
 function HomeRedirect() {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  return <Navigate to={isAuthenticated ? "/chat" : "/login"} replace />;
+  return <HomePage />;
 }
 
 export const router = createBrowserRouter([

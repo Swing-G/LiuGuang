@@ -9,23 +9,43 @@ interface MainLayoutProps {
 
 export function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+
+  const toggleSidebar = () => {
+    if (window.matchMedia("(min-width: 1024px)").matches) {
+      setSidebarCollapsed((prev) => !prev);
+      return;
+    }
+    setSidebarOpen((prev) => !prev);
+  };
 
   return (
-    <div className="relative flex min-h-[100dvh] overflow-hidden bg-[oklch(0.955_0.008_250)] text-[oklch(0.22_0.018_250)]">
+    <div className="relative flex min-h-[100dvh] overflow-hidden bg-[#F7F2EA] text-[#1F2430]">
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_12%_8%,oklch(0.88_0.045_205/.75),transparent_30%),radial-gradient(circle_at_88%_12%,oklch(0.92_0.055_70/.65),transparent_28%),linear-gradient(135deg,oklch(0.975_0.006_250),oklch(0.95_0.01_250))]"
+        className="pointer-events-none fixed inset-0 bg-[linear-gradient(135deg,#FFF8EF_0%,#F7F2EA_56%,#EEF0FA_100%)]"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 opacity-[0.28] [background-image:linear-gradient(oklch(0.2_0.02_250/.055)_1px,transparent_1px),linear-gradient(90deg,oklch(0.2_0.02_250/.055)_1px,transparent_1px)] [background-size:34px_34px]"
+        className="pointer-events-none fixed inset-0 opacity-[0.18] [background-image:linear-gradient(rgba(31,24,38,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(31,24,38,0.08)_1px,transparent_1px)] [background-size:44px_44px]"
       />
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="relative flex min-h-[100dvh] flex-1 flex-col overflow-hidden border-l border-[oklch(0.88_0.012_250)]/70 bg-[oklch(0.985_0.004_250)]/72 shadow-[inset_1px_0_0_oklch(1_0_0/.6)]">
-        <Header onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
-        <main className="min-h-0 flex-1 overflow-hidden">
-          {children}
-        </main>
+
+      <div
+        className={
+          sidebarCollapsed
+            ? "relative z-10 hidden w-0 shrink-0 overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] lg:block"
+            : "relative z-10 hidden w-[302px] shrink-0 overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] lg:block"
+        }
+      >
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      </div>
+      <div className="lg:hidden">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      </div>
+
+      <div className="relative flex min-h-[100dvh] min-w-0 flex-1 flex-col overflow-hidden bg-[#FFFDF8]/74 shadow-[inset_1px_0_0_rgba(31,24,38,0.06)]">
+        <Header isSidebarCollapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} />
+        <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
       </div>
     </div>
   );

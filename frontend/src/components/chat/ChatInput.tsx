@@ -65,10 +65,10 @@ export function ChatInput() {
     <div className="space-y-4">
       <div
         className={cn(
-          "relative flex flex-col rounded-2xl border bg-white px-4 pt-3 pb-2 transition-all duration-200",
+          "relative flex flex-col rounded-[1.35rem] border bg-white/72 px-4 pt-3 pb-2 shadow-[0_18px_46px_rgba(58,43,78,0.1)] backdrop-blur-xl transition-all duration-200",
           isFocused
-            ? "border-[#D4D4D4] shadow-[0_4px_12px_rgba(0,0,0,0.06)]"
-            : "border-[#E5E5E5] hover:border-[#D4D4D4]"
+            ? "border-[#FFB86C]/70 shadow-[0_20px_54px_rgba(255,143,112,0.16)]"
+            : "border-white/70 hover:border-[#FFB86C]/45"
         )}
       >
         <div className="relative">
@@ -77,7 +77,7 @@ export function ChatInput() {
             value={value}
             onChange={(event) => setValue(event.target.value)}
             placeholder={deepThinkingEnabled ? "输入需要深度分析的问题..." : "输入你的问题..."}
-            className="max-h-40 min-h-[44px] w-full resize-none border-0 bg-transparent px-2 pt-2 pb-2 pr-2 text-[15px] text-[#333333] shadow-none placeholder:text-[#999999] focus-visible:ring-0"
+            className="max-h-40 min-h-[44px] w-full resize-none border-0 bg-transparent px-2 pt-2 pb-2 pr-2 text-[15px] text-[#251C2D] shadow-none placeholder:text-[#9A879B] focus-visible:ring-0"
             rows={1}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
@@ -103,7 +103,7 @@ export function ChatInput() {
         </div>
         <div className="relative mt-2 flex flex-wrap items-center gap-2">
           <Select value={chatMode} onValueChange={setChatMode} disabled={isStreaming}>
-            <SelectTrigger className="h-8 w-[128px] rounded-lg border-[#E5E5E5] bg-[#F7F7F7] text-xs text-[#555555] shadow-none">
+            <SelectTrigger className="h-8 w-[128px] rounded-xl border-[#EADFD2] bg-[#FFF8EE]/72 text-xs text-[#5C4A66] shadow-none">
               <SelectValue placeholder="选择模式" />
             </SelectTrigger>
             <SelectContent>
@@ -121,16 +121,16 @@ export function ChatInput() {
             className={cn(
               "rounded-lg border px-3 py-1.5 text-xs font-medium transition-all",
               deepThinkingEnabled
-                ? "border-[#BFDBFE] bg-[#DBEAFE] text-[#2563EB]"
-                : "border-transparent bg-[#F5F5F5] text-[#999999] hover:bg-[#EEEEEE]",
+                ? "border-[#FFB86C]/60 bg-[#FFF0D6] text-[#8B4B2E]"
+                : "border-transparent bg-[#F4EADF] text-[#7B6B83] hover:bg-[#EEE0D2]",
               isStreaming && "cursor-not-allowed opacity-60"
             )}
           >
             <span className="inline-flex items-center gap-2">
-              <Brain className={cn("h-3.5 w-3.5", deepThinkingEnabled && "text-[#3B82F6]")} />
+              <Brain className={cn("h-3.5 w-3.5", deepThinkingEnabled && "text-[#FF8F70]")} />
               深度思考
               {deepThinkingEnabled ? (
-                <span className="h-2 w-2 rounded-full bg-[#3B82F6] animate-pulse" />
+                <span className="h-2 w-2 rounded-full bg-[#FF8F70] animate-pulse" />
               ) : null}
             </span>
           </button>
@@ -144,8 +144,8 @@ export function ChatInput() {
               isStreaming
                 ? "bg-[#FEE2E2] text-[#EF4444] hover:bg-[#FECACA]"
                 : hasContent
-                  ? "bg-[#3B82F6] text-white hover:bg-[#2563EB]"
-                  : "cursor-not-allowed bg-[#F5F5F5] text-[#CCCCCC]"
+                  ? "bg-[#251C2D] text-[#FFF8EE] shadow-[0_10px_24px_rgba(37,28,45,0.2)] hover:bg-[#3A2B4E]"
+                  : "cursor-not-allowed bg-[#EFE7DC] text-[#B8A9B5]"
             )}
           >
             {isStreaming ? <Square className="h-4 w-4" /> : <Send className="h-4 w-4" />}
@@ -153,17 +153,17 @@ export function ChatInput() {
         </div>
       </div>
       {deepThinkingEnabled ? (
-        <p className="text-xs text-[#2563EB]">
+        <p className="text-xs text-[#B4533A]">
           <span className="inline-flex items-center gap-1.5">
             <Lightbulb className="h-3.5 w-3.5" />
             深度思考模式已开启，AI将进行更深入的分析推理
           </span>
         </p>
       ) : null}
-      <p className="text-center text-xs text-[#999999]">
-        <kbd className="rounded bg-[#F5F5F5] px-1.5 py-0.5 text-[#666666]">Enter</kbd> 发送
+      <p className="text-center text-xs text-[#7B6B83]">
+        <kbd className="rounded bg-white/64 px-1.5 py-0.5 text-[#5C4A66]">Enter</kbd> 发送
         <span className="px-1.5">·</span>
-        <kbd className="rounded bg-[#F5F5F5] px-1.5 py-0.5 text-[#666666]">
+        <kbd className="rounded bg-white/64 px-1.5 py-0.5 text-[#5C4A66]">
           Shift + Enter
         </kbd>{" "}
         换行

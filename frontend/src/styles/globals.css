@@ -10,8 +10,8 @@
   --card-foreground: 222 47% 11%;
   --popover: 0 0% 100%;
   --popover-foreground: 222 47% 11%;
-  --primary: 239 84% 67%;
-  --primary-foreground: 0 0% 100%;
+  --primary: 18 92% 69%;
+  --primary-foreground: 34 100% 97%;
   --secondary: 210 40% 96%;
   --secondary-foreground: 222 47% 11%;
   --muted: 214 32% 91%;
@@ -42,8 +42,8 @@
   --text-on-accent: #ffffff;
 
   /* ===== 新设计系统 - 强调色（蓝色系）===== */
-  --accent-primary: #3b82f6;
-  --accent-secondary: #2563eb;
+  --accent-primary: #ff8f70;
+  --accent-secondary: #8b7cff;
   --accent-light: #dbeafe;
   --accent-hover: #60a5fa;
 

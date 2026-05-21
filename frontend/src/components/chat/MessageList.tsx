@@ -2,7 +2,6 @@ import * as React from "react";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 
 import { MessageItem } from "@/components/chat/MessageItem";
-import { WelcomeScreen } from "@/components/chat/WelcomeScreen";
 import { cn } from "@/lib/utils";
 import type { Message } from "@/types";
 
@@ -182,7 +181,7 @@ export function MessageList({ messages, isLoading, isStreaming, sessionKey }: Me
       ({ className, ...props }, ref) => (
         <div
           ref={ref}
-          className={cn("mx-auto max-w-[800px] space-y-10 px-6 pt-10 pb-2 md:px-8", className)}
+          className={cn("mx-auto max-w-[860px] space-y-10 px-6 pt-10 pb-2 md:px-8", className)}
           {...props}
         />
       )
@@ -201,7 +200,21 @@ export function MessageList({ messages, isLoading, isStreaming, sessionKey }: Me
     if (isLoading) {
       return <div className="h-full" />;
     }
-    return <WelcomeScreen />;
+    return (
+      <div className="flex h-full items-center justify-center px-6">
+        <div className="max-w-[560px] text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#21182B] text-[#FFF8EF] shadow-[0_14px_28px_rgba(31,24,38,0.18)]">
+            <span className="h-2.5 w-2.5 rounded-full bg-[#F4A261]" />
+          </div>
+          <h2 className="mt-5 text-2xl font-semibold tracking-[-0.04em] text-[#21182B] sm:text-3xl">
+            开始你的流光对话
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-[#6D6170] sm:text-base">
+            在下方输入问题，流光会帮你归纳、追问、推演，并把复杂信息整理成清晰答案。
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (

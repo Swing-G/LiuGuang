@@ -27,8 +27,8 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
 
   if (isUser) {
     return (
-      <div className="flex">
-        <div className="user-message">
+      <div className="flex justify-end">
+        <div className="max-w-[78%] rounded-[1.35rem] bg-[#21182B] px-4 py-3 text-[15px] leading-7 text-[#FFF8EF] shadow-[0_12px_28px_rgba(31,24,38,0.16)]">
           <p className="whitespace-pre-wrap break-words">{message.content}</p>
         </div>
       </div>
@@ -38,7 +38,7 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
   const thinkingDuration = message.thinkingDuration ? `${message.thinkingDuration}秒` : "";
   return (
     <div className="group flex">
-      <div className="min-w-0 flex-1 space-y-4">
+      <div className="min-w-0 flex-1 space-y-4 rounded-[1.35rem] bg-white/58 px-5 py-4 shadow-[0_12px_30px_rgba(31,24,38,0.06)] ring-1 ring-[#E8DDCF]">
         {isThinking ? (
           <ThinkingIndicator content={message.thinking} duration={message.thinkingDuration} />
         ) : null}
