@@ -49,11 +49,12 @@ public class TicketAccountQueryMcpToolExecutor implements McpToolExecutor {
         Map<String, Object> properties = new LinkedHashMap<>();
         properties.put("ticketId", Map.of("type", "string", "description", "工单编号，例如 T20260520001"));
         properties.put("accountId", Map.of("type", "string", "description", "业务账号 ID，例如 A10001"));
+        properties.put("orderId", Map.of("type", "string", "description", "支付或业务订单编号，例如 PAY10001"));
         JsonSchema inputSchema = new JsonSchema("object", properties, List.of(), false, null, null);
         return new Tool(
                 TOOL_NAME,
                 "账号工单查询",
-                "根据工单号或账号ID查询账号、订阅、支付和工单当前状态",
+                "根据工单号、账号ID或订单号查询账号、订阅、支付和工单当前状态",
                 inputSchema,
                 null,
                 null,
@@ -65,13 +66,14 @@ public class TicketAccountQueryMcpToolExecutor implements McpToolExecutor {
     public CallToolResult execute(Map<String, Object> parameters) {
         String ticketId = readText(parameters, "ticketId");
         String accountId = readText(parameters, "accountId");
-        if (!StringUtils.hasText(ticketId) && !StringUtils.hasText(accountId)) {
-            return error("缺少 ticketId 或 accountId，至少需要提供一个查询条件");
+        String orderId = readText(parameters, "orderId");
+        if (!StringUtils.hasText(ticketId) && !StringUtils.hasText(accountId) && !StringUtils.hasText(orderId)) {
+            return error("缺少 ticketId、accountId 或 orderId，至少需要提供一个查询条件");
         }
 
-        Map<String, Object> result = query(ticketId, accountId);
+        Map<String, Object> result = query(ticketId, accountId, orderId);
         if (result == null) {
-            return error("未查询到匹配的账号或工单数据，ticketId=" + nvl(ticketId) + "，accountId=" + nvl(accountId));
+            return error("未查询到匹配的账号、工单或订单数据，ticketId=" + nvl(ticketId) + "，accountId=" + nvl(accountId) + "，orderId=" + nvl(orderId));
         }
         return CallToolResult.builder()
                 .content(List.of(new TextContent(toText(result))))
@@ -80,8 +82,8 @@ public class TicketAccountQueryMcpToolExecutor implements McpToolExecutor {
                 .build();
     }
 
-    private Map<String, Object> query(String ticketId, String accountId) {
-        String sql = """
+    private Map<String, Object> query(String ticketId, String accountId, String orderId) {
+        StringBuilder sql = new StringBuilder("""
                 SELECT
                   a.account_id,
                   a.customer_name,
@@ -114,15 +116,23 @@ public class TicketAccountQueryMcpToolExecutor implements McpToolExecutor {
                 LEFT JOIN t_demo_subscription s ON s.account_id = a.account_id
                 LEFT JOIN t_demo_payment_order p ON p.account_id = a.account_id
                 LEFT JOIN t_demo_ticket t ON t.account_id = a.account_id
-                WHERE (:ticketId IS NULL OR t.ticket_id = :ticketId)
-                  AND (:accountId IS NULL OR a.account_id = :accountId)
-                ORDER BY t.update_time DESC NULLS LAST, p.pay_time DESC NULLS LAST
-                LIMIT 1
-                """;
-        MapSqlParameterSource params = new MapSqlParameterSource()
-                .addValue("ticketId", StringUtils.hasText(ticketId) ? ticketId : null)
-                .addValue("accountId", StringUtils.hasText(accountId) ? accountId : null);
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, params);
+                WHERE 1 = 1
+                """);
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        if (StringUtils.hasText(ticketId)) {
+            sql.append(" AND t.ticket_id = :ticketId\n");
+            params.addValue("ticketId", ticketId);
+        }
+        if (StringUtils.hasText(accountId)) {
+            sql.append(" AND a.account_id = :accountId\n");
+            params.addValue("accountId", accountId);
+        }
+        if (StringUtils.hasText(orderId)) {
+            sql.append(" AND p.payment_id = :orderId\n");
+            params.addValue("orderId", orderId);
+        }
+        sql.append(" ORDER BY t.update_time DESC NULLS LAST, p.pay_time DESC NULLS LAST LIMIT 1");
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql.toString(), params);
         return rows.isEmpty() ? null : rows.get(0);
     }
 

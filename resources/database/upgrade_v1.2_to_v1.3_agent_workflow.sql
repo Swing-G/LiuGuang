@@ -159,6 +159,30 @@ CREATE INDEX IF NOT EXISTS idx_agent_workflow_memory_summary_instance ON t_agent
 CREATE INDEX IF NOT EXISTS idx_agent_workflow_memory_summary_strategy ON t_agent_workflow_memory_summary (instance_id, strategy_type);
 COMMENT ON TABLE t_agent_workflow_memory_summary IS 'Agent Workflow任务级记忆摘要表';
 
+CREATE TABLE IF NOT EXISTS t_conversation_workflow_run (
+    id                   VARCHAR(20) NOT NULL PRIMARY KEY,
+    conversation_id      VARCHAR(64) NOT NULL,
+    user_id              VARCHAR(20) NOT NULL,
+    workflow_id          VARCHAR(20) NOT NULL,
+    workflow_type        VARCHAR(64) NOT NULL,
+    workflow_instance_id VARCHAR(20) NOT NULL,
+    business_type        VARCHAR(64),
+    business_id          VARCHAR(64),
+    status               VARCHAR(32),
+    entities_json        JSONB,
+    summary              TEXT,
+    input_json           JSONB,
+    output_json          JSONB,
+    context_json         JSONB,
+    create_time          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted              SMALLINT DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_conversation_workflow_run_conv ON t_conversation_workflow_run (conversation_id, user_id, workflow_type, create_time DESC);
+CREATE INDEX IF NOT EXISTS idx_conversation_workflow_run_instance ON t_conversation_workflow_run (workflow_instance_id);
+COMMENT ON TABLE t_conversation_workflow_run IS '会话内Workflow运行结果记忆表';
+COMMENT ON COLUMN t_conversation_workflow_run.summary IS '本轮Workflow结构化结果摘要，用于同会话连续追问复用';
+
 CREATE TABLE IF NOT EXISTS t_demo_account (
     account_id       VARCHAR(32)  NOT NULL PRIMARY KEY,
     customer_name    VARCHAR(64)  NOT NULL,

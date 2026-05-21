@@ -15,15 +15,25 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.agent.workflow.dao.mapper;
+package com.nageoffer.ai.ragent.rag.service.workflow;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.nageoffer.ai.ragent.agent.workflow.dao.entity.AgentWorkflowNodeDO;
-import org.apache.ibatis.annotations.Delete;
-import org.apache.ibatis.annotations.Param;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.nageoffer.ai.ragent.agent.workflow.controller.vo.AgentWorkflowInstanceVO;
+import com.nageoffer.ai.ragent.agent.workflow.controller.vo.AgentWorkflowVO;
+import com.nageoffer.ai.ragent.rag.dao.entity.ConversationWorkflowRunDO;
 
-public interface AgentWorkflowNodeMapper extends BaseMapper<AgentWorkflowNodeDO> {
+/**
+ * 会话内Workflow运行结果记忆服务
+ */
+public interface ConversationWorkflowRunService {
 
-    @Delete("DELETE FROM t_agent_workflow_node WHERE workflow_id = #{workflowId}")
-    int physicalDeleteByWorkflowId(@Param("workflowId") String workflowId);
+    ConversationWorkflowRunDO findLatest(String conversationId, String userId, String workflowType);
+
+    void record(String conversationId,
+                String userId,
+                AgentWorkflowVO workflow,
+                AgentWorkflowInstanceVO instance,
+                JsonNode input,
+                JsonNode entities,
+                String summary);
 }

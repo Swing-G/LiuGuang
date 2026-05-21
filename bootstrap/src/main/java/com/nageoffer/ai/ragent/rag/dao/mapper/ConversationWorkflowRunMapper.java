@@ -15,15 +15,10 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.agent.workflow.dao.mapper;
+package com.nageoffer.ai.ragent.rag.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.nageoffer.ai.ragent.agent.workflow.dao.entity.AgentWorkflowNodeDO;
-import org.apache.ibatis.annotations.Delete;
-import org.apache.ibatis.annotations.Param;
+import com.nageoffer.ai.ragent.rag.dao.entity.ConversationWorkflowRunDO;
 
-public interface AgentWorkflowNodeMapper extends BaseMapper<AgentWorkflowNodeDO> {
-
-    @Delete("DELETE FROM t_agent_workflow_node WHERE workflow_id = #{workflowId}")
-    int physicalDeleteByWorkflowId(@Param("workflowId") String workflowId);
+public interface ConversationWorkflowRunMapper extends BaseMapper<ConversationWorkflowRunDO> {
 }

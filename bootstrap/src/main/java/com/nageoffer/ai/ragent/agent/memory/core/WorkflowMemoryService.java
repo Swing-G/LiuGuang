@@ -25,23 +25,34 @@ import com.nageoffer.ai.ragent.agent.memory.domain.WorkflowMemoryResult;
 import com.nageoffer.ai.ragent.agent.memory.enums.WorkflowMemoryStrategyType;
 import com.nageoffer.ai.ragent.agent.workflow.dao.entity.AgentWorkflowInstanceDO;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 /**
  * Workflow任务级记忆服务门面
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class WorkflowMemoryService {
 
     private static final int DEFAULT_SUMMARY_INTERVAL = 3;
 
     private final WorkflowMemoryStrategyRegistry strategyRegistry;
     private final ObjectMapper objectMapper;
+    private final Executor memorySummaryExecutor;
+
+    public WorkflowMemoryService(WorkflowMemoryStrategyRegistry strategyRegistry,
+                                 ObjectMapper objectMapper,
+                                 @Qualifier("memorySummaryExecutor") Executor memorySummaryExecutor) {
+        this.strategyRegistry = strategyRegistry;
+        this.objectMapper = objectMapper;
+        this.memorySummaryExecutor = memorySummaryExecutor;
+    }
 
     public void compressIfNeeded(AgentWorkflowInstanceDO instance, ObjectNode context, JsonNode input, JsonNode workflowConfig, String triggerNodeKey, int executedSteps) {
         if (!enabled(workflowConfig)) {
@@ -51,7 +62,39 @@ public class WorkflowMemoryService {
         if (interval <= 0 || executedSteps % interval != 0) {
             return;
         }
+        scheduleCompression(instance, context, input, workflowConfig, triggerNodeKey, "Workflow任务记忆压缩");
+    }
+
+    public void compressOnFinish(AgentWorkflowInstanceDO instance, ObjectNode context, JsonNode input, JsonNode workflowConfig, String triggerNodeKey) {
+        if (!enabled(workflowConfig)) {
+            return;
+        }
+        scheduleCompression(instance, context, input, workflowConfig, triggerNodeKey, "Workflow完成时任务记忆压缩");
+    }
+
+    private void scheduleCompression(AgentWorkflowInstanceDO instance,
+                                     ObjectNode context,
+                                     JsonNode input,
+                                     JsonNode workflowConfig,
+                                     String triggerNodeKey,
+                                     String scene) {
         String strategyType = resolveStrategyType(workflowConfig);
+        AgentWorkflowInstanceDO instanceSnapshot = copyInstance(instance);
+        ObjectNode contextSnapshot = context == null ? objectMapper.createObjectNode() : context.deepCopy();
+        JsonNode inputSnapshot = input == null ? objectMapper.nullNode() : input.deepCopy();
+        CompletableFuture.runAsync(() -> doCompress(instanceSnapshot, contextSnapshot, inputSnapshot, strategyType, triggerNodeKey, scene), memorySummaryExecutor)
+                .exceptionally(ex -> {
+                    log.error("{}异步任务失败 - instanceId: {}, strategy: {}", scene, instanceSnapshot.getId(), strategyType, ex);
+                    return null;
+                });
+    }
+
+    private void doCompress(AgentWorkflowInstanceDO instance,
+                            ObjectNode context,
+                            JsonNode input,
+                            String strategyType,
+                            String triggerNodeKey,
+                            String scene) {
         try {
             WorkflowMemoryStrategy strategy = strategyRegistry.getRequired(strategyType);
             WorkflowMemoryResult result = strategy.compress(WorkflowMemoryContext.builder()
@@ -60,29 +103,34 @@ public class WorkflowMemoryService {
                     .input(input)
                     .triggerNodeKey(triggerNodeKey)
                     .build());
-            log.info("Workflow任务记忆压缩完成 - instanceId: {}, strategy: {}, compressed: {}, eventCount: {}",
-                    instance.getId(), strategyType, result.isCompressed(), result.getEventCount());
+            log.info("{}完成 - instanceId: {}, strategy: {}, compressed: {}, eventCount: {}",
+                    scene, instance.getId(), strategyType, result.isCompressed(), result.getEventCount());
         } catch (Exception ex) {
-            log.error("Workflow任务记忆压缩失败 - instanceId: {}, strategy: {}", instance.getId(), strategyType, ex);
+            log.error("{}失败 - instanceId: {}, strategy: {}", scene, instance.getId(), strategyType, ex);
         }
     }
 
-    public void compressOnFinish(AgentWorkflowInstanceDO instance, ObjectNode context, JsonNode input, JsonNode workflowConfig, String triggerNodeKey) {
-        if (!enabled(workflowConfig)) {
-            return;
-        }
-        String strategyType = resolveStrategyType(workflowConfig);
-        try {
-            WorkflowMemoryStrategy strategy = strategyRegistry.getRequired(strategyType);
-            strategy.compress(WorkflowMemoryContext.builder()
-                    .instance(instance)
-                    .workflowContext(context)
-                    .input(input)
-                    .triggerNodeKey(triggerNodeKey)
-                    .build());
-        } catch (Exception ex) {
-            log.error("Workflow完成时任务记忆压缩失败 - instanceId: {}, strategy: {}", instance.getId(), strategyType, ex);
-        }
+    private AgentWorkflowInstanceDO copyInstance(AgentWorkflowInstanceDO source) {
+        return AgentWorkflowInstanceDO.builder()
+                .id(source.getId())
+                .workflowId(source.getWorkflowId())
+                .workflowVersion(source.getWorkflowVersion())
+                .harnessType(source.getHarnessType())
+                .businessType(source.getBusinessType())
+                .businessId(source.getBusinessId())
+                .userId(source.getUserId())
+                .status(source.getStatus())
+                .inputJson(source.getInputJson())
+                .contextJson(source.getContextJson())
+                .outputJson(source.getOutputJson())
+                .errorMessage(source.getErrorMessage())
+                .currentNodeKey(source.getCurrentNodeKey())
+                .startedAt(source.getStartedAt())
+                .completedAt(source.getCompletedAt())
+                .createTime(source.getCreateTime())
+                .updateTime(source.getUpdateTime())
+                .deleted(source.getDeleted())
+                .build();
     }
 
     public JsonNode parseConfig(String raw) {

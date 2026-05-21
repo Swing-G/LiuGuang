@@ -75,7 +75,7 @@ public class TicketAccountAnalysisActionExecutor implements AgentActionExecutor 
         String rootCause = resolveRootCause(payStatus, subscriptionStatus, failureReason, autoRenewEnabled);
         String currentState = buildCurrentState(accountStatus, subscriptionStatus, payStatus, ticketStatus, failureReason);
         String suggestion = buildSuggestion(riskLevel, rootCause, autoRenewEnabled, dueAmount, amount);
-        String customerReply = buildCustomerReply(customerName, ticketId, rootCause, suggestion);
+        String customerReply = buildCustomerReply(customerName, ticketId, rootCause);
 
         ObjectNode output = objectMapper.createObjectNode();
         output.put("ticketId", ticketId);
@@ -135,8 +135,11 @@ public class TicketAccountAnalysisActionExecutor implements AgentActionExecutor 
         return priority + "；当前判断：" + rootCause + "；建议动作：" + renew + "，核对 " + money + "，必要时补偿一次人工续期并保留回访记录。";
     }
 
-    private String buildCustomerReply(String customerName, String ticketId, String rootCause, String suggestion) {
-        return customerName + "，我们已核实工单 " + ticketId + " 的账号与续费状态。当前问题主要是：" + rootCause + "。" + suggestion;
+    private String buildCustomerReply(String customerName, String ticketId, String rootCause) {
+        return customerName + "，我们已经核实到工单 " + ticketId + " 对应账号的续费情况。"
+                + "这次续费没有成功，主要是" + rootCause + "。"
+                + "我们会按当前优先级继续跟进，同时请先核对扣款银行卡、账户余额以及银行风控状态；"
+                + "如果需要，我们也可以协助安排一次人工续期，并把处理过程保留在回访记录里。";
     }
 
     private String text(JsonNode node, String field, String defaultValue) {

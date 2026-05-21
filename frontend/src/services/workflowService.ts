@@ -134,6 +134,8 @@ export interface AgentWorkflowCreatePayload {
   edges: AgentWorkflowEdge[];
 }
 
+export type AgentWorkflowUpdatePayload = AgentWorkflowCreatePayload;
+
 export interface AgentWorkflowRunPayload {
   businessType: string;
   businessId: string;
@@ -158,6 +160,18 @@ export async function getAgentWorkflows(params: {
 
 export async function createAgentWorkflow(payload: AgentWorkflowCreatePayload): Promise<AgentWorkflow> {
   return api.post<AgentWorkflow, AgentWorkflow>("/agent/workflows", payload);
+}
+
+export async function getAgentWorkflow(id: string): Promise<AgentWorkflow> {
+  return api.get<AgentWorkflow, AgentWorkflow>(`/agent/workflows/${id}`);
+}
+
+export async function updateAgentWorkflow(id: string, payload: AgentWorkflowUpdatePayload): Promise<AgentWorkflow> {
+  return api.put<AgentWorkflow, AgentWorkflow>(`/agent/workflows/${id}`, payload);
+}
+
+export async function deleteAgentWorkflow(id: string): Promise<void> {
+  return api.delete<void, void>(`/agent/workflows/${id}`);
 }
 
 export async function runAgentWorkflow(id: string, payload: AgentWorkflowRunPayload): Promise<AgentWorkflowInstance> {
@@ -199,13 +213,14 @@ export function buildTicketTriageWorkflow(): AgentWorkflowCreatePayload {
       properties: {
         ticketId: { type: "string" },
         accountId: { type: "string" },
+        orderId: { type: "string" },
         content: { type: "string" },
         question: { type: "string" }
       }
     },
     outputSchema: { type: "object" },
     nodes: [
-      { nodeKey: "queryAccountTicket", nodeName: "查询账号工单数据", nodeType: "ACTION", actionType: "MCP_TOOL", nodeOrder: 1, config: { toolName: "ticket.account.query", inputParameters: ["ticketId", "accountId"] } },
+      { nodeKey: "queryAccountTicket", nodeName: "查询账号工单数据", nodeType: "ACTION", actionType: "MCP_TOOL", nodeOrder: 1, config: { toolName: "ticket.account.query", inputParameters: ["ticketId", "accountId", "orderId"] } },
       { nodeKey: "analyzeAccountTicket", nodeName: "分析账号当前状态", nodeType: "ACTION", actionType: "TICKET_ACCOUNT_ANALYSIS", nodeOrder: 2, config: { sourceNodeKey: "queryAccountTicket" } },
       { nodeKey: "evaluateAnalysis", nodeName: "验收分析结果", nodeType: "EVALUATOR", nodeOrder: 3, config: { evaluatorType: "RULE", targetNodeKey: "analyzeAccountTicket", requiredFields: ["ticketId", "accountId", "riskLevel", "rootCause", "currentState", "suggestion", "customerReply"], minLength: 20, maxReflectionRounds: 0, retryNodeKey: "analyzeAccountTicket" } },
       { nodeKey: "end", nodeName: "结束", nodeType: "END", nodeOrder: 4, config: {} }

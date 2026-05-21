@@ -19,6 +19,11 @@ package com.nageoffer.ai.ragent.agent.workflow.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nageoffer.ai.ragent.agent.workflow.dao.entity.AgentWorkflowEdgeDO;
+import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Param;
 
 public interface AgentWorkflowEdgeMapper extends BaseMapper<AgentWorkflowEdgeDO> {
+
+    @Delete("DELETE FROM t_agent_workflow_edge WHERE workflow_id = #{workflowId}")
+    int physicalDeleteByWorkflowId(@Param("workflowId") String workflowId);
 }

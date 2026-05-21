@@ -176,17 +176,43 @@ public class AgentWorkflowServiceImpl implements AgentWorkflowService {
                 .orElse(null);
     }
     private void saveNodes(String workflowId, List<AgentWorkflowNodeRequest> list) {
-        nodeMapper.delete(new LambdaQueryWrapper<AgentWorkflowNodeDO>().eq(AgentWorkflowNodeDO::getWorkflowId, workflowId));
+        nodeMapper.physicalDeleteByWorkflowId(workflowId);
         if (list == null) return;
-        for (AgentWorkflowNodeRequest n : list) nodeMapper.insert(AgentWorkflowNodeDO.builder().workflowId(workflowId).nodeKey(n.getNodeKey()).nodeName(n.getNodeName()).nodeType(n.getNodeType()).actionType(n.getActionType()).configJson(json(n.getConfig())).retryLimit(n.getRetryLimit() == null ? 0 : n.getRetryLimit()).nodeOrder(n.getNodeOrder() == null ? 0 : n.getNodeOrder()).build());
+        for (AgentWorkflowNodeRequest n : list) {
+            if (!StringUtils.hasText(n.getNodeKey())) {
+                throw new ClientException("节点Key不能为空");
+            }
+            nodeMapper.insert(AgentWorkflowNodeDO.builder()
+                    .workflowId(workflowId)
+                    .nodeKey(n.getNodeKey())
+                    .nodeName(n.getNodeName())
+                    .nodeType(n.getNodeType())
+                    .actionType(n.getActionType())
+                    .skillId(n.getSkillId())
+                    .configJson(json(n.getConfig()))
+                    .inputMappingJson(json(n.getInputMapping()))
+                    .outputMappingJson(json(n.getOutputMapping()))
+                    .retryLimit(n.getRetryLimit() == null ? 0 : n.getRetryLimit())
+                    .timeoutMs(n.getTimeoutMs())
+                    .nodeOrder(n.getNodeOrder() == null ? 0 : n.getNodeOrder())
+                    .build());
+        }
     }
 
     private void saveEdges(String workflowId, List<AgentWorkflowEdgeRequest> list) {
-        edgeMapper.delete(new LambdaQueryWrapper<AgentWorkflowEdgeDO>().eq(AgentWorkflowEdgeDO::getWorkflowId, workflowId));
+        edgeMapper.physicalDeleteByWorkflowId(workflowId);
         if (list == null) return;
-        for (AgentWorkflowEdgeRequest e : list) edgeMapper.insert(AgentWorkflowEdgeDO.builder().workflowId(workflowId).sourceNodeKey(e.getSourceNodeKey()).targetNodeKey(e.getTargetNodeKey()).edgeType(def(e.getEdgeType(), WorkflowEdgeType.DEFAULT.name())).priority(e.getPriority() == null ? 0 : e.getPriority()).build());
+        for (AgentWorkflowEdgeRequest e : list) {
+            edgeMapper.insert(AgentWorkflowEdgeDO.builder()
+                    .workflowId(workflowId)
+                    .sourceNodeKey(e.getSourceNodeKey())
+                    .targetNodeKey(e.getTargetNodeKey())
+                    .edgeType(def(e.getEdgeType(), WorkflowEdgeType.DEFAULT.name()))
+                    .conditionExpr(e.getConditionExpr())
+                    .priority(e.getPriority() == null ? 0 : e.getPriority())
+                    .build());
+        }
     }
-
     private List<AgentWorkflowNodeDO> nodes(String workflowId) { return nodeMapper.selectList(new LambdaQueryWrapper<AgentWorkflowNodeDO>().eq(AgentWorkflowNodeDO::getWorkflowId, workflowId).eq(AgentWorkflowNodeDO::getDeleted, 0).orderByAsc(AgentWorkflowNodeDO::getNodeOrder)); }
     private List<AgentWorkflowEdgeDO> edges(String workflowId) { return edgeMapper.selectList(new LambdaQueryWrapper<AgentWorkflowEdgeDO>().eq(AgentWorkflowEdgeDO::getWorkflowId, workflowId).eq(AgentWorkflowEdgeDO::getDeleted, 0).orderByAsc(AgentWorkflowEdgeDO::getPriority)); }
     private AgentWorkflowDefinitionDO requiredWorkflow(String workflowId) { AgentWorkflowDefinitionDO workflow = workflowMapper.selectById(workflowId); Assert.notNull(workflow, () -> new ClientException("未找到工作流")); return workflow; }
