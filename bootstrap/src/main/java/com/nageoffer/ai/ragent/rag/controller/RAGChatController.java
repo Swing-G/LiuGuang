@@ -52,9 +52,10 @@ public class RAGChatController {
     public SseEmitter chat(@RequestParam String question,
                            @RequestParam(required = false) String conversationId,
                            @RequestParam(required = false, defaultValue = "false") Boolean deepThinking,
-                           @RequestParam(required = false, defaultValue = "RAG") String mode) {
+                           @RequestParam(required = false, defaultValue = "RAG") String mode,
+                           @RequestParam(required = false) String workflowType) {
         SseEmitter emitter = new SseEmitter(ragDefaultProperties.getSseTimeoutMs());
-        ragChatService.streamChat(question, conversationId, deepThinking, ChatMode.of(mode), emitter);
+        ragChatService.streamChat(question, conversationId, deepThinking, ChatMode.of(mode), workflowType, emitter);
         return emitter;
     }
 

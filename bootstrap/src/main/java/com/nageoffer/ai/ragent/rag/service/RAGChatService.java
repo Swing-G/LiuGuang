@@ -35,7 +35,7 @@ public interface RAGChatService {
      * @param mode           对话执行模式
      * @param emitter        SSE 发射器
      */
-    void streamChat(String question, String conversationId, Boolean deepThinking, ChatMode mode, SseEmitter emitter);
+    void streamChat(String question, String conversationId, Boolean deepThinking, ChatMode mode, String workflowType, SseEmitter emitter);
 
     /**
      * 停止指定任务 ID 的流式会话

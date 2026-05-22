@@ -50,7 +50,7 @@ public class RAGChatServiceImpl implements RAGChatService {
 
     @Override
     @ChatRateLimit
-    public void streamChat(String question, String conversationId, Boolean deepThinking, ChatMode mode, SseEmitter emitter) {
+    public void streamChat(String question, String conversationId, Boolean deepThinking, ChatMode mode, String workflowType, SseEmitter emitter) {
         String actualConversationId = StrUtil.isBlank(conversationId) ? IdUtil.getSnowflakeNextIdStr() : conversationId;
         String taskId = StrUtil.isBlank(RagTraceContext.getTaskId())
                 ? IdUtil.getSnowflakeNextIdStr()
@@ -62,7 +62,7 @@ public class RAGChatServiceImpl implements RAGChatService {
         StreamCallback callback = callbackFactory.createChatEventHandler(emitter, actualConversationId, taskId);
 
         if (actualMode == ChatMode.WORKFLOW) {
-            workflowChatRouter.handle(question, actualConversationId, UserContext.getUserId(), callback);
+            workflowChatRouter.handle(question, actualConversationId, UserContext.getUserId(), workflowType, callback);
             return;
         }
         if (actualMode == ChatMode.REACT || actualMode == ChatMode.PAE) {

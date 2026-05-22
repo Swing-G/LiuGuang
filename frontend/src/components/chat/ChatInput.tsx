@@ -1,14 +1,145 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { Brain, Lightbulb, Send, Square } from "lucide-react";
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useChatStore } from "@/stores/chatStore";
 
+type ChatModeKey = "RAG" | "WORKFLOW" | "REACT" | "PAE";
+
+type PromptPreset = {
+  title: string;
+  description: string;
+  prompt: string;
+};
+
+const FLOW_PROMPT_PRESETS: Record<string, PromptPreset[]> = {
+  ticket_triage_chat: [
+    {
+      title: "分析续费失败工单",
+      description: "查询账号、订单和工单事实并给出处理建议",
+      prompt:
+        "帮我分析工单 T20260520001，客户说续费失败，账号 A10001，订单 PAY10001，看看当前状态并给出处理建议。"
+    },
+    {
+      title: "生成客服处理回复",
+      description: "判断原因并生成可发送给客户的话术",
+      prompt:
+        "客户反馈账号 A10001 无法续费，订单号 PAY10001，请查询账号和支付状态，判断原因并生成客服回复。"
+    }
+  ],
+  ticket_quick_triage_chat: [
+    {
+      title: "客诉工单初筛",
+      description: "判断问题类型、风险等级和责任团队",
+      prompt:
+        "客户反馈付款后权益没有到账，情绪比较激动。请帮我做工单初筛，判断问题类型、风险等级和应该分派给哪个团队。"
+    },
+    {
+      title: "发票问题分派",
+      description: "判断财务类工单优先级和处理建议",
+      prompt:
+        "客户说发票开错了，要求今天内重开，否则会投诉。请帮我初筛这个工单，给出分类、风险等级、负责团队和客服回复建议。"
+    }
+  ],
+  customer_success_followup_chat: [
+    {
+      title: "续费失败回访建议",
+      description: "生成风险判断、回访重点、话术和下一步动作",
+      prompt:
+        "客户 A10001 续费失败，订单 PAY10001，之前有工单 T20260520001。请帮我生成客户成功回访建议，包括风险判断、回访重点、建议话术和下一步动作。"
+    },
+    {
+      title: "VIP 客户挽回方案",
+      description: "面向客户成功团队生成跟进动作",
+      prompt:
+        "VIP 客户账号 A10001 最近反馈续费失败并多次催促，请结合账号和订单 PAY10001 给出回访方案。"
+    }
+  ]
+};
+
+const MODE_PROMPT_PRESETS: Record<Exclude<ChatModeKey, "WORKFLOW">, PromptPreset[]> = {
+  RAG: [
+    {
+      title: "查询公司制度",
+      description: "从私域知识库检索制度、流程和规范",
+      prompt: "请从知识库中查询公司请假制度，并总结申请流程、审批要求和注意事项。"
+    },
+    {
+      title: "查询 IT 支持说明",
+      description: "面向内部员工的问题检索",
+      prompt: "请查询 IT 支持相关文档，说明账号无法登录时应该如何排查和提交工单。"
+    }
+  ],
+  REACT: [
+    {
+      title: "排查接口异常",
+      description: "按观察、分析、行动的方式定位问题",
+      prompt:
+        "线上接口最近 10 分钟错误率升高，请按 ReAct 思路帮我制定排查步骤，包含需要观察的日志、指标和可能原因。"
+    },
+    {
+      title: "排查数据库慢查询",
+      description: "生成运维故障排查路径",
+      prompt:
+        "数据库响应变慢，业务侧出现超时。请帮我按运维故障排查 Agent 的方式分析可能原因和处理步骤。"
+    }
+  ],
+  PAE: [
+    {
+      title: "生成技术方案",
+      description: "输出背景、目标、架构、风险和实施计划",
+      prompt:
+        "请帮我生成一份技术方案：为当前 RAG 系统增加多租户知识库隔离能力，包含目标、架构设计、数据模型、接口改造、风险和里程碑。"
+    },
+    {
+      title: "评审改造方案",
+      description: "从可行性、复杂度和风险角度分析",
+      prompt:
+        "请评审一个方案：将同步知识入库流程改造成异步任务队列。请分析收益、风险、改造步骤和回滚策略。"
+    }
+  ]
+};
+
+function getPromptPresets(chatMode: ChatModeKey, workflowType: string) {
+  if (chatMode === "WORKFLOW") {
+    return FLOW_PROMPT_PRESETS[workflowType] || FLOW_PROMPT_PRESETS.ticket_triage_chat;
+  }
+  return MODE_PROMPT_PRESETS[chatMode];
+}
+
+function getInputPlaceholder(
+  chatMode: ChatModeKey,
+  workflowType: string,
+  deepThinkingEnabled: boolean
+) {
+  const prefix = deepThinkingEnabled ? "输入需要深度分析的问题" : "输入你的问题";
+  const modeHint =
+    chatMode === "WORKFLOW"
+      ? workflowType === "ticket_quick_triage_chat"
+        ? "工单初筛"
+        : workflowType === "customer_success_followup_chat"
+          ? "客户回访"
+          : "工单分析"
+      : chatMode === "REACT"
+        ? "故障排查"
+        : chatMode === "PAE"
+          ? "技术方案"
+          : "知识库问答";
+  return `${prefix}，输入 / 选择${modeHint}预设提示词`;
+}
+
 export function ChatInput() {
   const [value, setValue] = React.useState("");
   const [isFocused, setIsFocused] = React.useState(false);
+  const [activePresetIndex, setActivePresetIndex] = React.useState(0);
   const isComposingRef = React.useRef(false);
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
   const {
@@ -19,8 +150,16 @@ export function ChatInput() {
     setDeepThinkingEnabled,
     chatMode,
     setChatMode,
+    workflowType,
+    setWorkflowType,
     inputFocusKey
   } = useChatStore();
+
+  const promptPresets = React.useMemo(
+    () => getPromptPresets(chatMode as ChatModeKey, workflowType),
+    [chatMode, workflowType]
+  );
+  const showPromptMenu = isFocused && value.trimStart().startsWith("/") && promptPresets.length > 0;
 
   const focusInput = React.useCallback(() => {
     const el = textareaRef.current;
@@ -36,6 +175,18 @@ export function ChatInput() {
     el.style.height = `${next}px`;
   }, []);
 
+  const applyPreset = React.useCallback(
+    (preset: PromptPreset) => {
+      setValue(preset.prompt);
+      setActivePresetIndex(0);
+      requestAnimationFrame(() => {
+        adjustHeight();
+        focusInput();
+      });
+    },
+    [adjustHeight, focusInput]
+  );
+
   React.useEffect(() => {
     adjustHeight();
   }, [value, adjustHeight]);
@@ -45,13 +196,17 @@ export function ChatInput() {
     focusInput();
   }, [inputFocusKey, focusInput]);
 
+  React.useEffect(() => {
+    setActivePresetIndex(0);
+  }, [chatMode, workflowType, value]);
+
   const handleSubmit = async () => {
     if (isStreaming) {
       cancelGeneration();
       focusInput();
       return;
     }
-    if (!value.trim()) return;
+    if (!value.trim() || value.trim() === "/") return;
     const next = value;
     setValue("");
     focusInput();
@@ -59,7 +214,7 @@ export function ChatInput() {
     focusInput();
   };
 
-  const hasContent = value.trim().length > 0;
+  const hasContent = value.trim().length > 0 && value.trim() !== "/";
 
   return (
     <div className="space-y-4">
@@ -76,7 +231,11 @@ export function ChatInput() {
             ref={textareaRef}
             value={value}
             onChange={(event) => setValue(event.target.value)}
-            placeholder={deepThinkingEnabled ? "输入需要深度分析的问题..." : "输入你的问题..."}
+            placeholder={getInputPlaceholder(
+              chatMode as ChatModeKey,
+              workflowType,
+              deepThinkingEnabled
+            )}
             className="max-h-40 min-h-[44px] w-full resize-none border-0 bg-transparent px-2 pt-2 pb-2 pr-2 text-[15px] text-[#251C2D] shadow-none placeholder:text-[#9A879B] focus-visible:ring-0"
             rows={1}
             onFocus={() => setIsFocused(true)}
@@ -88,9 +247,37 @@ export function ChatInput() {
               isComposingRef.current = false;
             }}
             onKeyDown={(event) => {
+              if (showPromptMenu) {
+                if (event.key === "ArrowDown") {
+                  event.preventDefault();
+                  setActivePresetIndex((index) => (index + 1) % promptPresets.length);
+                  return;
+                }
+                if (event.key === "ArrowUp") {
+                  event.preventDefault();
+                  setActivePresetIndex((index) =>
+                    index === 0 ? promptPresets.length - 1 : index - 1
+                  );
+                  return;
+                }
+                if (event.key === "Tab") {
+                  event.preventDefault();
+                  applyPreset(promptPresets[activePresetIndex]);
+                  return;
+                }
+              }
               if (event.key === "Enter" && !event.shiftKey) {
                 const nativeEvent = event.nativeEvent as KeyboardEvent;
-                if (nativeEvent.isComposing || isComposingRef.current || nativeEvent.keyCode === 229) {
+                if (
+                  nativeEvent.isComposing ||
+                  isComposingRef.current ||
+                  nativeEvent.keyCode === 229
+                ) {
+                  return;
+                }
+                if (showPromptMenu) {
+                  event.preventDefault();
+                  applyPreset(promptPresets[activePresetIndex]);
                   return;
                 }
                 event.preventDefault();
@@ -99,20 +286,67 @@ export function ChatInput() {
             }}
             aria-label="聊天输入框"
           />
+          {showPromptMenu ? (
+            <div className="absolute bottom-[calc(100%+10px)] left-0 right-0 z-20 overflow-hidden rounded-2xl border border-[#EADFD2] bg-[#FFFDF8] shadow-[0_22px_54px_rgba(58,43,78,0.16)]">
+              <div className="border-b border-[#F0E4D7] px-4 py-3">
+                <p className="text-xs font-medium text-[#5C4A66]">选择一个预设提示词</p>
+                <p className="mt-1 text-[11px] text-[#9A879B]">
+                  按 Enter 或 Tab 填入，也可以直接点击
+                </p>
+              </div>
+              <div className="max-h-72 overflow-auto p-2">
+                {promptPresets.map((preset, index) => (
+                  <button
+                    key={`${preset.title}-${index}`}
+                    type="button"
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      applyPreset(preset);
+                    }}
+                    onMouseEnter={() => setActivePresetIndex(index)}
+                    className={cn(
+                      "w-full rounded-xl px-3 py-3 text-left transition-all duration-150",
+                      index === activePresetIndex
+                        ? "bg-[#FFF0D6] text-[#251C2D]"
+                        : "text-[#5C4A66] hover:bg-[#F8EFE4]"
+                    )}
+                  >
+                    <span className="block text-sm font-semibold">{preset.title}</span>
+                    <span className="mt-1 block text-xs text-[#7B6B83]">{preset.description}</span>
+                    <span className="mt-2 line-clamp-2 block text-xs leading-5 text-[#9A5A44]">
+                      {preset.prompt}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-[10px] bg-gradient-to-b from-white/0 via-white/40 to-white/90" />
         </div>
         <div className="relative mt-2 flex flex-wrap items-center gap-2">
           <Select value={chatMode} onValueChange={setChatMode} disabled={isStreaming}>
-            <SelectTrigger className="h-8 w-[128px] rounded-xl border-[#EADFD2] bg-[#FFF8EE]/72 text-xs text-[#5C4A66] shadow-none">
+            <SelectTrigger className="h-8 w-[158px] rounded-xl border-[#EADFD2] bg-[#FFF8EE]/72 text-xs text-[#5C4A66] shadow-none">
               <SelectValue placeholder="选择模式" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="RAG">RAG 知识库</SelectItem>
-              <SelectItem value="WORKFLOW">Workflow</SelectItem>
-              <SelectItem value="REACT">ReAct 预留</SelectItem>
-              <SelectItem value="PAE">PAE 预留</SelectItem>
+              <SelectItem value="RAG">私域问答-RAG</SelectItem>
+              <SelectItem value="WORKFLOW">可控流程-Flow</SelectItem>
+              <SelectItem value="REACT">运维故障排查 Agent-ReAct</SelectItem>
+              <SelectItem value="PAE">技术方案生成-PAE</SelectItem>
             </SelectContent>
           </Select>
+          {chatMode === "WORKFLOW" ? (
+            <Select value={workflowType} onValueChange={setWorkflowType} disabled={isStreaming}>
+              <SelectTrigger className="h-8 w-[210px] rounded-xl border-[#EADFD2] bg-white/72 text-xs text-[#5C4A66] shadow-none">
+                <SelectValue placeholder="选择 Flow 方向" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ticket_triage_chat">工单账号深度分析</SelectItem>
+                <SelectItem value="ticket_quick_triage_chat">工单初筛与分派</SelectItem>
+                <SelectItem value="customer_success_followup_chat">客户成功回访建议</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : null}
           <button
             type="button"
             onClick={() => setDeepThinkingEnabled(!deepThinkingEnabled)}
@@ -161,12 +395,11 @@ export function ChatInput() {
         </p>
       ) : null}
       <p className="text-center text-xs text-[#7B6B83]">
+        <kbd className="rounded bg-white/64 px-1.5 py-0.5 text-[#5C4A66]">/</kbd> 选择预设提示词
+        <span className="px-1.5">·</span>
         <kbd className="rounded bg-white/64 px-1.5 py-0.5 text-[#5C4A66]">Enter</kbd> 发送
         <span className="px-1.5">·</span>
-        <kbd className="rounded bg-white/64 px-1.5 py-0.5 text-[#5C4A66]">
-          Shift + Enter
-        </kbd>{" "}
-        换行
+        <kbd className="rounded bg-white/64 px-1.5 py-0.5 text-[#5C4A66]">Shift + Enter</kbd> 换行
         {isStreaming ? <span className="ml-2 animate-pulse-soft">生成中...</span> : null}
       </p>
     </div>

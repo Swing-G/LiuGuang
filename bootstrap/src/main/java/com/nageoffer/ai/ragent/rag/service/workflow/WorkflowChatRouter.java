@@ -49,7 +49,10 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class WorkflowChatRouter {
 
+    private static final String DEFAULT_WORKFLOW_TYPE = "ticket_triage_chat";
     private static final String TICKET_TRIAGE_WORKFLOW_TYPE = "ticket_triage_chat";
+    private static final String TICKET_QUICK_TRIAGE_WORKFLOW_TYPE = "ticket_quick_triage_chat";
+    private static final String CUSTOMER_SUCCESS_WORKFLOW_TYPE = "customer_success_followup_chat";
     private static final Pattern TICKET_ID_PATTERN = Pattern.compile("[Tt][-_]?[0-9]{6,}");
     private static final Pattern ACCOUNT_ID_PATTERN = Pattern.compile("[Aa][-_]?[0-9]{4,}");
     private static final Pattern ORDER_ID_PATTERN = Pattern.compile("(?i)(?:PAY|ORD|ORDER)[-_]?[0-9]{4,}");
@@ -60,10 +63,12 @@ public class WorkflowChatRouter {
     private final ObjectMapper objectMapper;
     private final LLMService llmService;
 
-    public boolean handle(String question, String conversationId, String userId, StreamCallback callback) {
-        AgentWorkflowVO workflow = workflowService.findEnabledByType(TICKET_TRIAGE_WORKFLOW_TYPE);
+    public boolean handle(String question, String conversationId, String userId, String workflowType,
+                          StreamCallback callback) {
+        String selectedWorkflowType = resolveWorkflowType(workflowType);
+        AgentWorkflowVO workflow = workflowService.findEnabledByType(selectedWorkflowType);
         if (workflow == null) {
-            callback.onContent("当前未配置可用的工单处理 Workflow。请先在 Workflow 管理页创建并启用 workflowType=" + TICKET_TRIAGE_WORKFLOW_TYPE + " 的流程。");
+            callback.onContent("当前未配置可用的 Flow。请先在 Workflow 管理页创建并启用 workflowType=" + selectedWorkflowType + " 的流程。");
             callback.onComplete();
             return true;
         }
@@ -84,10 +89,24 @@ public class WorkflowChatRouter {
         return runOrAskForMoreInfo(question, conversationId, userId, callback, workflow, history);
     }
 
+    private String resolveWorkflowType(String workflowType) {
+        if (!StringUtils.hasText(workflowType)) {
+            return DEFAULT_WORKFLOW_TYPE;
+        }
+        String normalized = workflowType.trim();
+        if (TICKET_TRIAGE_WORKFLOW_TYPE.equals(normalized)
+                || TICKET_QUICK_TRIAGE_WORKFLOW_TYPE.equals(normalized)
+                || CUSTOMER_SUCCESS_WORKFLOW_TYPE.equals(normalized)) {
+            return normalized;
+        }
+        return DEFAULT_WORKFLOW_TYPE;
+    }
+
     private boolean runOrAskForMoreInfo(String question, String conversationId, String userId, StreamCallback callback, AgentWorkflowVO workflow, List<ChatMessage> history) {
         ConversationWorkflowRunDO previousRun = conversationWorkflowRunService.findLatest(conversationId, userId, workflow.getWorkflowType());
         WorkflowIdentifiers identifiers = resolveIdentifiers(question, history, previousRun);
-        if (!identifiers.hasAnyLookupKey()) {
+        boolean quickTriageFlow = TICKET_QUICK_TRIAGE_WORKFLOW_TYPE.equals(workflow.getWorkflowType());
+        if (!identifiers.hasAnyLookupKey() && !quickTriageFlow) {
             completeWithAssistantMessage(conversationId, userId, callback, buildMissingInfoReply());
             return true;
         }
@@ -266,6 +285,20 @@ public class WorkflowChatRouter {
                 return nested;
             }
         }
+        JsonNode buildFollowupPlan = node.path("buildFollowupPlan");
+        if (!buildFollowupPlan.isMissingNode()) {
+            String nested = buildFollowupPlan.path(field).asText(null);
+            if (StringUtils.hasText(nested)) {
+                return nested;
+            }
+        }
+        JsonNode triageTicket = node.path("triageTicket");
+        if (!triageTicket.isMissingNode()) {
+            String nested = triageTicket.path(field).asText(null);
+            if (StringUtils.hasText(nested)) {
+                return nested;
+            }
+        }
         JsonNode input = node.path("input");
         if (!input.isMissingNode()) {
             String nested = input.path(field).asText(null);
@@ -284,9 +317,32 @@ public class WorkflowChatRouter {
         return entities;
     }
 
+    private JsonNode primaryAnalysis(JsonNode context) {
+        if (context == null || context.isNull() || context.isMissingNode()) {
+            return null;
+        }
+        JsonNode analysis = context.path("analyzeAccountTicket");
+        if (isPresentNode(analysis)) {
+            return analysis;
+        }
+        analysis = context.path("buildFollowupPlan");
+        if (isPresentNode(analysis)) {
+            return analysis;
+        }
+        analysis = context.path("triageTicket");
+        if (isPresentNode(analysis)) {
+            return analysis;
+        }
+        return null;
+    }
+
+    private boolean isPresentNode(JsonNode node) {
+        return node != null && !node.isMissingNode() && !node.isNull() && !node.isEmpty();
+    }
+
     private String buildWorkflowRunSummary(AgentWorkflowInstanceVO instance, String reply) {
         JsonNode context = instance == null ? null : instance.getContext();
-        JsonNode analysis = context == null ? null : context.path("analyzeAccountTicket");
+        JsonNode analysis = context == null ? null : primaryAnalysis(context);
         if (analysis == null || analysis.isMissingNode() || analysis.isNull() || analysis.isEmpty()) {
             analysis = context == null ? null : context.path("triageTicket");
         }
@@ -329,10 +385,7 @@ public class WorkflowChatRouter {
         ObjectNode context = instance.getContext() != null && instance.getContext().isObject()
                 ? (ObjectNode) instance.getContext()
                 : objectMapper.createObjectNode();
-        JsonNode analysis = context.path("analyzeAccountTicket");
-        if (analysis.isMissingNode() || analysis.isNull() || analysis.isEmpty()) {
-            analysis = context.path("triageTicket");
-        }
+        JsonNode analysis = primaryAnalysis(context);
         if (!isValidAnalysis(analysis)) {
             return buildInvalidAnalysisReply(context);
         }

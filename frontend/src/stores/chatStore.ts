@@ -1,7 +1,13 @@
 import { create } from "zustand";
 import { toast } from "sonner";
 
-import type { CompletionPayload, FeedbackValue, Message, MessageDeltaPayload, Session } from "@/types";
+import type {
+  CompletionPayload,
+  FeedbackValue,
+  Message,
+  MessageDeltaPayload,
+  Session
+} from "@/types";
 import {
   listMessages,
   listSessions,
@@ -26,6 +32,7 @@ interface ChatState {
   isCreatingNew: boolean;
   deepThinkingEnabled: boolean;
   chatMode: ChatMode;
+  workflowType: string;
   thinkingStartAt: number | null;
   streamTaskId: string | null;
   streamAbort: (() => void) | null;
@@ -39,6 +46,7 @@ interface ChatState {
   updateSessionTitle: (sessionId: string, title: string) => void;
   setDeepThinkingEnabled: (enabled: boolean) => void;
   setChatMode: (mode: ChatMode) => void;
+  setWorkflowType: (workflowType: string) => void;
   sendMessage: (content: string) => Promise<void>;
   cancelGeneration: () => void;
   appendStreamContent: (delta: string) => void;
@@ -86,6 +94,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   isCreatingNew: false,
   deepThinkingEnabled: false,
   chatMode: "RAG",
+  workflowType: "ticket_triage_chat",
   thinkingStartAt: null,
   streamTaskId: null,
   streamAbort: null,
@@ -97,9 +106,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const data = await listSessions();
       const sessions = data
         .map((item) => ({
-        id: item.conversationId,
-        title: item.title || "新对话",
-        lastTime: item.lastTime
+          id: item.conversationId,
+          title: item.title || "新对话",
+          lastTime: item.lastTime
         }))
         .sort((a, b) => {
           const timeA = a.lastTime ? new Date(a.lastTime).getTime() : 0;
@@ -229,12 +238,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setChatMode: (mode) => {
     set({ chatMode: mode });
   },
+  setWorkflowType: (workflowType) => {
+    set({ workflowType });
+  },
   sendMessage: async (content) => {
     const trimmed = content.trim();
     if (!trimmed) return;
     if (get().isStreaming) return;
     const deepThinkingEnabled = get().deepThinkingEnabled;
     const chatMode = get().chatMode;
+    const workflowType = get().workflowType;
     const inputFocusKey = Date.now();
 
     const userMessage: Message = {
@@ -272,7 +285,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       question: trimmed,
       conversationId: conversationId || undefined,
       deepThinking: deepThinkingEnabled ? true : undefined,
-      mode: chatMode
+      mode: chatMode,
+      workflowType: chatMode === "WORKFLOW" ? workflowType : undefined
     });
     const url = `${API_BASE_URL}/rag/v3/chat${query}`;
     const token = storage.getToken();
@@ -371,9 +385,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         set((state) => ({
           messages: state.messages.map((message) => {
             if (message.id !== state.streamingMessageId) return message;
-            const suffix = message.content.includes("（已停止生成）")
-              ? ""
-              : "\n\n（已停止生成）";
+            const suffix = message.content.includes("（已停止生成）") ? "" : "\n\n（已停止生成）";
             const nextId = payload?.messageId ? String(payload.messageId) : message.id;
             return {
               ...message,
@@ -487,7 +499,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
             content: message.content + delta,
             isThinking: shouldFinalizeThinking ? false : message.isThinking,
             thinkingDuration:
-              shouldFinalizeThinking && !message.thinkingDuration ? duration : message.thinkingDuration
+              shouldFinalizeThinking && !message.thinkingDuration
+                ? duration
+                : message.thinkingDuration
           };
         })
       };

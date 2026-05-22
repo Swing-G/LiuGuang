@@ -142,12 +142,14 @@ export interface AgentWorkflowRunPayload {
   input: Record<string, unknown>;
 }
 
-export async function getAgentWorkflows(params: {
-  pageNo?: number;
-  pageSize?: number;
-  keyword?: string;
-  status?: string;
-} = {}): Promise<PageResult<AgentWorkflow>> {
+export async function getAgentWorkflows(
+  params: {
+    pageNo?: number;
+    pageSize?: number;
+    keyword?: string;
+    status?: string;
+  } = {}
+): Promise<PageResult<AgentWorkflow>> {
   return api.get<PageResult<AgentWorkflow>, PageResult<AgentWorkflow>>("/agent/workflows", {
     params: {
       pageNo: params.pageNo ?? 1,
@@ -158,7 +160,9 @@ export async function getAgentWorkflows(params: {
   });
 }
 
-export async function createAgentWorkflow(payload: AgentWorkflowCreatePayload): Promise<AgentWorkflow> {
+export async function createAgentWorkflow(
+  payload: AgentWorkflowCreatePayload
+): Promise<AgentWorkflow> {
   return api.post<AgentWorkflow, AgentWorkflow>("/agent/workflows", payload);
 }
 
@@ -166,7 +170,10 @@ export async function getAgentWorkflow(id: string): Promise<AgentWorkflow> {
   return api.get<AgentWorkflow, AgentWorkflow>(`/agent/workflows/${id}`);
 }
 
-export async function updateAgentWorkflow(id: string, payload: AgentWorkflowUpdatePayload): Promise<AgentWorkflow> {
+export async function updateAgentWorkflow(
+  id: string,
+  payload: AgentWorkflowUpdatePayload
+): Promise<AgentWorkflow> {
   return api.put<AgentWorkflow, AgentWorkflow>(`/agent/workflows/${id}`, payload);
 }
 
@@ -174,32 +181,44 @@ export async function deleteAgentWorkflow(id: string): Promise<void> {
   return api.delete<void, void>(`/agent/workflows/${id}`);
 }
 
-export async function runAgentWorkflow(id: string, payload: AgentWorkflowRunPayload): Promise<AgentWorkflowInstance> {
-  return api.post<AgentWorkflowInstance, AgentWorkflowInstance>(`/agent/workflows/${id}/run`, payload);
+export async function runAgentWorkflow(
+  id: string,
+  payload: AgentWorkflowRunPayload
+): Promise<AgentWorkflowInstance> {
+  return api.post<AgentWorkflowInstance, AgentWorkflowInstance>(
+    `/agent/workflows/${id}/run`,
+    payload
+  );
 }
 
 export async function getAgentWorkflowInstance(id: string): Promise<AgentWorkflowInstance> {
   return api.get<AgentWorkflowInstance, AgentWorkflowInstance>(`/agent/workflow-instances/${id}`);
 }
 
-export async function getAgentWorkflowInstances(params: {
-  pageNo?: number;
-  pageSize?: number;
-  workflowId?: string;
-} = {}): Promise<PageResult<AgentWorkflowInstance>> {
-  return api.get<PageResult<AgentWorkflowInstance>, PageResult<AgentWorkflowInstance>>("/agent/workflow-instances", {
-    params: {
-      pageNo: params.pageNo ?? 1,
-      pageSize: params.pageSize ?? 10,
-      workflowId: params.workflowId || undefined
+export async function getAgentWorkflowInstances(
+  params: {
+    pageNo?: number;
+    pageSize?: number;
+    workflowId?: string;
+  } = {}
+): Promise<PageResult<AgentWorkflowInstance>> {
+  return api.get<PageResult<AgentWorkflowInstance>, PageResult<AgentWorkflowInstance>>(
+    "/agent/workflow-instances",
+    {
+      params: {
+        pageNo: params.pageNo ?? 1,
+        pageSize: params.pageSize ?? 10,
+        workflowId: params.workflowId || undefined
+      }
     }
-  });
+  );
 }
 
 export function buildTicketTriageWorkflow(): AgentWorkflowCreatePayload {
   return {
     name: "工单账号分析 Workflow",
-    description: "演示用户提出账号或工单疑问后，Workflow 调用 MCP 查询账号、订阅、支付和工单数据，再输出处理建议的固定流程",
+    description:
+      "演示用户提出账号或工单疑问后，Workflow 调用 MCP 查询账号、订阅、支付和工单数据，再输出处理建议的固定流程",
     workflowType: "ticket_triage_chat",
     harnessType: "FLOW",
     status: "ENABLED",
@@ -220,15 +239,220 @@ export function buildTicketTriageWorkflow(): AgentWorkflowCreatePayload {
     },
     outputSchema: { type: "object" },
     nodes: [
-      { nodeKey: "queryAccountTicket", nodeName: "查询账号工单数据", nodeType: "ACTION", actionType: "MCP_TOOL", nodeOrder: 1, config: { toolName: "ticket.account.query", inputParameters: ["ticketId", "accountId", "orderId"] } },
-      { nodeKey: "analyzeAccountTicket", nodeName: "分析账号当前状态", nodeType: "ACTION", actionType: "TICKET_ACCOUNT_ANALYSIS", nodeOrder: 2, config: { sourceNodeKey: "queryAccountTicket" } },
-      { nodeKey: "evaluateAnalysis", nodeName: "验收分析结果", nodeType: "EVALUATOR", nodeOrder: 3, config: { evaluatorType: "RULE", targetNodeKey: "analyzeAccountTicket", requiredFields: ["ticketId", "accountId", "riskLevel", "rootCause", "currentState", "suggestion", "customerReply"], minLength: 20, maxReflectionRounds: 0, retryNodeKey: "analyzeAccountTicket" } },
+      {
+        nodeKey: "queryAccountTicket",
+        nodeName: "查询账号工单数据",
+        nodeType: "ACTION",
+        actionType: "MCP_TOOL",
+        nodeOrder: 1,
+        config: {
+          toolName: "ticket.account.query",
+          inputParameters: ["ticketId", "accountId", "orderId"]
+        }
+      },
+      {
+        nodeKey: "analyzeAccountTicket",
+        nodeName: "分析账号当前状态",
+        nodeType: "ACTION",
+        actionType: "TICKET_ACCOUNT_ANALYSIS",
+        nodeOrder: 2,
+        config: { sourceNodeKey: "queryAccountTicket" }
+      },
+      {
+        nodeKey: "evaluateAnalysis",
+        nodeName: "验收分析结果",
+        nodeType: "EVALUATOR",
+        nodeOrder: 3,
+        config: {
+          evaluatorType: "RULE",
+          targetNodeKey: "analyzeAccountTicket",
+          requiredFields: [
+            "ticketId",
+            "accountId",
+            "riskLevel",
+            "rootCause",
+            "currentState",
+            "suggestion",
+            "customerReply"
+          ],
+          minLength: 20,
+          maxReflectionRounds: 0,
+          retryNodeKey: "analyzeAccountTicket"
+        }
+      },
       { nodeKey: "end", nodeName: "结束", nodeType: "END", nodeOrder: 4, config: {} }
     ],
     edges: [
-      { sourceNodeKey: "queryAccountTicket", targetNodeKey: "analyzeAccountTicket", edgeType: "DEFAULT", priority: 1 },
-      { sourceNodeKey: "analyzeAccountTicket", targetNodeKey: "evaluateAnalysis", edgeType: "DEFAULT", priority: 1 },
+      {
+        sourceNodeKey: "queryAccountTicket",
+        targetNodeKey: "analyzeAccountTicket",
+        edgeType: "DEFAULT",
+        priority: 1
+      },
+      {
+        sourceNodeKey: "analyzeAccountTicket",
+        targetNodeKey: "evaluateAnalysis",
+        edgeType: "DEFAULT",
+        priority: 1
+      },
       { sourceNodeKey: "evaluateAnalysis", targetNodeKey: "end", edgeType: "DEFAULT", priority: 1 }
+    ]
+  };
+}
+export function buildTicketQuickTriageWorkflow(): AgentWorkflowCreatePayload {
+  return {
+    name: "工单初筛与分派 Flow",
+    description:
+      "面向售后入口的轻量流程：提取用户诉求，按账号访问、支付续费、票据财务、客户投诉等方向完成初筛、风险分级和责任团队建议。适合用户只给出问题描述但暂未进入深度账号核验的场景。",
+    workflowType: "ticket_quick_triage_chat",
+    harnessType: "FLOW",
+    status: "ENABLED",
+    config: {
+      flowScenario: "工单入口初筛",
+      flowGoal: "把非结构化客诉转成可分派的工单摘要、风险等级和处理建议",
+      memoryEnabled: true,
+      memoryStrategyType: "LAYERED",
+      memorySummaryInterval: 1
+    },
+    inputSchema: {
+      type: "object",
+      properties: {
+        ticketId: { type: "string" },
+        content: { type: "string" },
+        question: { type: "string" },
+        source: { type: "string" }
+      }
+    },
+    outputSchema: { type: "object" },
+    nodes: [
+      {
+        nodeKey: "triageTicket",
+        nodeName: "识别诉求与风险",
+        nodeType: "ACTION",
+        actionType: "TICKET_TRIAGE",
+        nodeOrder: 1,
+        config: {}
+      },
+      {
+        nodeKey: "evaluateTriage",
+        nodeName: "验收分派结果",
+        nodeType: "EVALUATOR",
+        nodeOrder: 2,
+        config: {
+          evaluatorType: "RULE",
+          targetNodeKey: "triageTicket",
+          requiredFields: [
+            "ticketId",
+            "category",
+            "riskLevel",
+            "ownerTeam",
+            "summary",
+            "suggestion",
+            "customerReply"
+          ],
+          minLength: 20,
+          maxReflectionRounds: 0,
+          retryNodeKey: "triageTicket"
+        }
+      },
+      { nodeKey: "end", nodeName: "结束", nodeType: "END", nodeOrder: 3, config: {} }
+    ],
+    edges: [
+      {
+        sourceNodeKey: "triageTicket",
+        targetNodeKey: "evaluateTriage",
+        edgeType: "DEFAULT",
+        priority: 1
+      },
+      { sourceNodeKey: "evaluateTriage", targetNodeKey: "end", edgeType: "DEFAULT", priority: 1 }
+    ]
+  };
+}
+
+export function buildCustomerSuccessFollowupWorkflow(): AgentWorkflowCreatePayload {
+  return {
+    name: "客户成功回访建议 Flow",
+    description:
+      "面向客户成功团队的固定流程：查询账号、订阅、支付和工单数据，形成续费风险判断、回访话术和下一步动作。适合 VIP 续费失败、订阅临期、客诉回访等场景。",
+    workflowType: "customer_success_followup_chat",
+    harnessType: "FLOW",
+    status: "ENABLED",
+    config: {
+      flowScenario: "客户成功回访",
+      flowGoal: "把账号与工单事实转成客户成功团队可执行的回访建议",
+      memoryEnabled: true,
+      memoryStrategyType: "LAYERED",
+      memorySummaryInterval: 1
+    },
+    inputSchema: {
+      type: "object",
+      properties: {
+        ticketId: { type: "string" },
+        accountId: { type: "string" },
+        orderId: { type: "string" },
+        content: { type: "string" },
+        question: { type: "string" }
+      }
+    },
+    outputSchema: { type: "object" },
+    nodes: [
+      {
+        nodeKey: "queryAccountTicket",
+        nodeName: "查询客户上下文",
+        nodeType: "ACTION",
+        actionType: "MCP_TOOL",
+        nodeOrder: 1,
+        config: {
+          toolName: "ticket.account.query",
+          inputParameters: ["ticketId", "accountId", "orderId"]
+        }
+      },
+      {
+        nodeKey: "buildFollowupPlan",
+        nodeName: "生成回访建议",
+        nodeType: "ACTION",
+        actionType: "TICKET_ACCOUNT_ANALYSIS",
+        nodeOrder: 2,
+        config: { sourceNodeKey: "queryAccountTicket" }
+      },
+      {
+        nodeKey: "evaluateFollowup",
+        nodeName: "验收回访建议",
+        nodeType: "EVALUATOR",
+        nodeOrder: 3,
+        config: {
+          evaluatorType: "RULE",
+          targetNodeKey: "buildFollowupPlan",
+          requiredFields: [
+            "ticketId",
+            "accountId",
+            "customerName",
+            "riskLevel",
+            "rootCause",
+            "suggestion",
+            "customerReply"
+          ],
+          minLength: 20,
+          maxReflectionRounds: 0,
+          retryNodeKey: "buildFollowupPlan"
+        }
+      },
+      { nodeKey: "end", nodeName: "结束", nodeType: "END", nodeOrder: 4, config: {} }
+    ],
+    edges: [
+      {
+        sourceNodeKey: "queryAccountTicket",
+        targetNodeKey: "buildFollowupPlan",
+        edgeType: "DEFAULT",
+        priority: 1
+      },
+      {
+        sourceNodeKey: "buildFollowupPlan",
+        targetNodeKey: "evaluateFollowup",
+        edgeType: "DEFAULT",
+        priority: 1
+      },
+      { sourceNodeKey: "evaluateFollowup", targetNodeKey: "end", edgeType: "DEFAULT", priority: 1 }
     ]
   };
 }
