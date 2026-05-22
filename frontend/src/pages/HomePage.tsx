@@ -15,7 +15,7 @@ const capabilityCards = [
     title: "私域知识检索增强",
     description: "融合 pgvector、上下文压缩与异步摘要，让问答能追溯，也能持续吸收资料。",
     icon: Layers3,
-    className: "right-2 top-4 w-[292px] rotate-[5deg] bg-[#FFF8EF] text-[#21182B] shadow-[0_26px_64px_rgba(31,24,38,0.14)] ring-1 ring-[#E8DDCF]",
+    className: "right-2 top-8 w-[292px] rotate-[5deg] bg-[#FFF8EF] text-[#21182B] shadow-[0_26px_64px_rgba(31,24,38,0.14)] ring-1 ring-[#E8DDCF]",
     accent: "bg-[#EDE6FF] text-[#5B4AB8]"
   },
   {
@@ -31,7 +31,7 @@ const capabilityCards = [
     title: "生成与验收分离",
     description: "独立 Evaluator 负责校验，配合 Reflection 纠错，给长链路任务加上安全边界。",
     icon: Route,
-    className: "right-12 top-[300px] w-[300px] rotate-[-5deg] bg-[#F2D6B6] text-[#21182B] shadow-[0_24px_60px_rgba(129,76,42,0.2)]",
+    className: "right-1 top-[280px] w-[300px] rotate-[-5deg] bg-[#F2D6B6] text-[#21182B] shadow-[0_24px_60px_rgba(129,76,42,0.2)]",
     accent: "bg-[#21182B] text-[#FFF8EF]"
   },
   {

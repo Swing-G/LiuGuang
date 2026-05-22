@@ -21,9 +21,11 @@ import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nageoffer.ai.ragent.user.controller.request.LoginRequest;
+import com.nageoffer.ai.ragent.user.controller.request.RegisterRequest;
 import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
+import com.nageoffer.ai.ragent.user.enums.UserRole;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.user.service.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -55,6 +57,46 @@ public class AuthServiceImpl implements AuthService {
         StpUtil.login(loginId);
         String avatar = StrUtil.isBlank(user.getAvatar()) ? DEFAULT_AVATAR_URL : user.getAvatar();
         return new LoginVO(loginId, user.getRole(), StpUtil.getTokenValue(), avatar);
+    }
+
+    @Override
+    public LoginVO register(RegisterRequest requestParam) {
+        if (requestParam == null) {
+            throw new ClientException("注册信息不能为空");
+        }
+        String username = StrUtil.trimToNull(requestParam.getUsername());
+        String password = StrUtil.trimToNull(requestParam.getPassword());
+        String confirmPassword = StrUtil.trimToNull(requestParam.getConfirmPassword());
+        if (StrUtil.isBlank(username)) {
+            throw new ClientException("用户名不能为空");
+        }
+        if (StrUtil.length(username) < 3 || StrUtil.length(username) > 32) {
+            throw new ClientException("用户名长度需为 3-32 位");
+        }
+        if (StrUtil.isBlank(password)) {
+            throw new ClientException("密码不能为空");
+        }
+        if (StrUtil.length(password) < 6 || StrUtil.length(password) > 64) {
+            throw new ClientException("密码长度需为 6-64 位");
+        }
+        if (!password.equals(confirmPassword)) {
+            throw new ClientException("两次输入的密码不一致");
+        }
+        if (findByUsername(username) != null) {
+            throw new ClientException("用户名已存在");
+        }
+
+        UserDO record = UserDO.builder()
+                .username(username)
+                .password(password)
+                .role(UserRole.USER.getCode())
+                .avatar(DEFAULT_AVATAR_URL)
+                .build();
+        userMapper.insert(record);
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setUsername(username);
+        loginRequest.setPassword(password);
+        return login(loginRequest);
     }
 
     @Override

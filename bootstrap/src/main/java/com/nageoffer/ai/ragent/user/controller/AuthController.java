@@ -18,6 +18,7 @@
 package com.nageoffer.ai.ragent.user.controller;
 
 import com.nageoffer.ai.ragent.user.controller.request.LoginRequest;
+import com.nageoffer.ai.ragent.user.controller.request.RegisterRequest;
 import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
@@ -43,6 +44,14 @@ public class AuthController {
     @PostMapping("/auth/login")
     public Result<LoginVO> login(@RequestBody LoginRequest requestParam) {
         return Results.success(authService.login(requestParam));
+    }
+
+    /**
+     * 用户注册接口，默认创建普通用户并返回登录态
+     */
+    @PostMapping("/auth/register")
+    public Result<LoginVO> register(@RequestBody RegisterRequest requestParam) {
+        return Results.success(authService.register(requestParam));
     }
 
     /**
