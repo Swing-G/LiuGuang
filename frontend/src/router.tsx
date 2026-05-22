@@ -1,6 +1,7 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import { LoginPage } from "@/pages/LoginPage";
+import { AdminLoginPage } from "@/pages/AdminLoginPage";
 import { HomePage } from "@/pages/HomePage";
 import { ChatPage } from "@/pages/ChatPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
@@ -35,7 +36,7 @@ function RequireAdmin({ children }: { children: JSX.Element }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/admin/login" replace />;
   }
 
   if (user?.role !== "admin") {
@@ -46,9 +47,10 @@ function RequireAdmin({ children }: { children: JSX.Element }) {
 }
 
 function RedirectIfAuth({ children }: { children: JSX.Element }) {
+  const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   if (isAuthenticated) {
-    return <Navigate to="/chat" replace />;
+    return <Navigate to={user?.role === "admin" ? "/admin/dashboard" : "/chat"} replace />;
   }
   return children;
 }
@@ -67,6 +69,14 @@ export const router = createBrowserRouter([
     element: (
       <RedirectIfAuth>
         <LoginPage />
+      </RedirectIfAuth>
+    )
+  },
+  {
+    path: "/admin/login",
+    element: (
+      <RedirectIfAuth>
+        <AdminLoginPage />
       </RedirectIfAuth>
     )
   },

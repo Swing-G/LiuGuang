@@ -17,11 +17,12 @@
 
 package com.nageoffer.ai.ragent.user.controller;
 
+import com.nageoffer.ai.ragent.framework.convention.Result;
+import com.nageoffer.ai.ragent.framework.web.Results;
+import com.nageoffer.ai.ragent.user.controller.request.AdminLoginRequest;
 import com.nageoffer.ai.ragent.user.controller.request.LoginRequest;
 import com.nageoffer.ai.ragent.user.controller.request.RegisterRequest;
 import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
-import com.nageoffer.ai.ragent.framework.convention.Result;
-import com.nageoffer.ai.ragent.framework.web.Results;
 import com.nageoffer.ai.ragent.user.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -44,6 +45,14 @@ public class AuthController {
     @PostMapping("/auth/login")
     public Result<LoginVO> login(@RequestBody LoginRequest requestParam) {
         return Results.success(authService.login(requestParam));
+    }
+
+    /**
+     * 管理员独立登录接口
+     */
+    @PostMapping("/auth/admin/login")
+    public Result<LoginVO> adminLogin(@RequestBody AdminLoginRequest requestParam) {
+        return Results.success(authService.adminLogin(requestParam));
     }
 
     /**

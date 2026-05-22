@@ -240,7 +240,7 @@ export function LoginPage() {
                   </div>
                 ) : (
                   <p className="text-xs leading-5 text-[#756676]">
-                    注册账号默认为普通用户，可进入对话与个人会话空间；管理员能力仍由后台分配。
+                    注册账号默认为普通用户，可进入对话与个人会话空间。
                   </p>
                 )}
 

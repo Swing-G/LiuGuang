@@ -20,15 +20,17 @@ package com.nageoffer.ai.ragent.user.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.user.controller.request.AdminLoginRequest;
 import com.nageoffer.ai.ragent.user.controller.request.LoginRequest;
 import com.nageoffer.ai.ragent.user.controller.request.RegisterRequest;
 import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.enums.UserRole;
-import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.user.service.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -39,6 +41,9 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserMapper userMapper;
 
+    @Value("${ragent.admin.password:}")
+    private String configuredAdminPassword;
+
     @Override
     public LoginVO login(LoginRequest requestParam) {
         String username = requestParam.getUsername();
@@ -47,16 +52,27 @@ public class AuthServiceImpl implements AuthService {
             throw new ClientException("用户名或密码不能为空");
         }
         UserDO user = findByUsername(username);
-        if (user == null || !passwordMatches(password, user.getPassword())) {
+        if (user == null || !passwordMatches(password, user.getPassword()) || UserRole.ADMIN.getCode().equals(user.getRole())) {
             throw new ClientException("用户名或密码错误");
         }
-        if (user.getId() == null) {
-            throw new ClientException("用户信息异常");
+        return loginUser(user);
+    }
+
+    @Override
+    public LoginVO adminLogin(AdminLoginRequest requestParam) {
+        if (requestParam == null || StrUtil.isBlank(requestParam.getPassword())) {
+            throw new ClientException("管理员密码不能为空");
         }
-        String loginId = user.getId().toString();
-        StpUtil.login(loginId);
-        String avatar = StrUtil.isBlank(user.getAvatar()) ? DEFAULT_AVATAR_URL : user.getAvatar();
-        return new LoginVO(loginId, user.getRole(), StpUtil.getTokenValue(), avatar);
+        UserDO admin = findFirstAdmin();
+        if (admin == null) {
+            throw new ClientException("管理员账号未初始化");
+        }
+        String password = StrUtil.trim(requestParam.getPassword());
+        String expectedPassword = StrUtil.blankToDefault(configuredAdminPassword, admin.getPassword());
+        if (!passwordMatches(password, expectedPassword)) {
+            throw new ClientException("管理员密码错误");
+        }
+        return loginUser(admin);
     }
 
     @Override
@@ -104,6 +120,16 @@ public class AuthServiceImpl implements AuthService {
         StpUtil.logout();
     }
 
+    private LoginVO loginUser(UserDO user) {
+        if (user.getId() == null) {
+            throw new ClientException("用户信息异常");
+        }
+        String loginId = user.getId().toString();
+        StpUtil.login(loginId);
+        String avatar = StrUtil.isBlank(user.getAvatar()) ? DEFAULT_AVATAR_URL : user.getAvatar();
+        return new LoginVO(loginId, user.getRole(), StpUtil.getTokenValue(), avatar);
+    }
+
     private UserDO findByUsername(String username) {
         if (StrUtil.isBlank(username)) {
             return null;
@@ -112,6 +138,15 @@ public class AuthServiceImpl implements AuthService {
                 Wrappers.lambdaQuery(UserDO.class)
                         .eq(UserDO::getUsername, username)
                         .eq(UserDO::getDeleted, 0)
+        );
+    }
+
+    private UserDO findFirstAdmin() {
+        return userMapper.selectOne(
+                Wrappers.lambdaQuery(UserDO.class)
+                        .eq(UserDO::getRole, UserRole.ADMIN.getCode())
+                        .eq(UserDO::getDeleted, 0)
+                        .last("limit 1")
         );
     }
 

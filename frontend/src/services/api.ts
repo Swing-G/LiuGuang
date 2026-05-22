@@ -18,6 +18,18 @@ export function setAuthToken(token: string | null) {
   }
 }
 
+function getLoginPath() {
+  return window.location.pathname.startsWith("/admin") ? "/admin/login" : "/login";
+}
+
+function redirectToLogin() {
+  storage.clearAuth();
+  const loginPath = getLoginPath();
+  if (window.location.pathname !== loginPath) {
+    window.location.href = loginPath;
+  }
+}
+
 api.interceptors.request.use((config) => {
   const token = storage.getToken();
   if (token) {
@@ -34,10 +46,7 @@ api.interceptors.response.use(
         const message = payload.message || "请求失败";
         const isAuthExpired = typeof message === "string" && message.includes("未登录");
         if (isAuthExpired) {
-          storage.clearAuth();
-          if (window.location.pathname !== "/login") {
-            window.location.href = "/login";
-          }
+          redirectToLogin();
         }
         return Promise.reject(new Error(message));
       }
@@ -47,10 +56,7 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error?.response?.status === 401) {
-      storage.clearAuth();
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
-      }
+      redirectToLogin();
     }
     const responseData = error?.response?.data;
     if (responseData && typeof responseData === "object" && "message" in responseData && responseData.message) {

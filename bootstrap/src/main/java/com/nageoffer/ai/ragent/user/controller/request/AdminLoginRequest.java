@@ -15,20 +15,12 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.service;
+package com.nageoffer.ai.ragent.user.controller.request;
 
-import com.nageoffer.ai.ragent.user.controller.request.AdminLoginRequest;
-import com.nageoffer.ai.ragent.user.controller.request.LoginRequest;
-import com.nageoffer.ai.ragent.user.controller.request.RegisterRequest;
-import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
+import lombok.Data;
 
-public interface AuthService {
+@Data
+public class AdminLoginRequest {
 
-    LoginVO login(LoginRequest requestParam);
-
-    LoginVO adminLogin(AdminLoginRequest requestParam);
-
-    LoginVO register(RegisterRequest requestParam);
-
-    void logout();
+    private String password;
 }
