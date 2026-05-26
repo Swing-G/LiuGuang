@@ -224,7 +224,7 @@ export function AdminLayout() {
 
   useEffect(() => {
     let active = true;
-    fetch("https://api.github.com/repos/nageoffer/ragent")
+    fetch("https://api.github.com/repos/Swing-G/LiuGuang")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!active) return;
@@ -469,8 +469,8 @@ export function AdminLayout() {
             <div className="admin-sidebar__logo">R</div>
             {!collapsed && (
               <div className="min-w-0">
-                <h1 className="admin-sidebar__title">Ragent AI 管理后台</h1>
-                <p className="admin-sidebar__subtitle">Knowledge Console</p>
+                <h1 className="admin-sidebar__title">流光</h1>
+                <p className="admin-sidebar__subtitle">AI Agent 编排系统</p>
               </div>
             )}
           </div>
@@ -615,10 +615,18 @@ export function AdminLayout() {
 
       <div
         className={cn(
-          "admin-main flex min-h-screen flex-1 flex-col overflow-auto",
+          "admin-main relative isolate flex min-h-screen flex-1 flex-col overflow-auto",
           isDashboardRoute && "dashboard-scroll-shell"
         )}
       >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(135deg,#FFF8EF_0%,#F7F2EA_56%,#EEF0FA_100%)]"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -z-10 opacity-[0.14] [background-image:linear-gradient(rgba(31,24,38,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(31,24,38,0.08)_1px,transparent_1px)] [background-size:44px_44px]"
+        />
         <header className="admin-topbar">
           <div className="admin-topbar-inner">
             <div className="flex items-center gap-3">
@@ -632,7 +640,7 @@ export function AdminLayout() {
                 <Menu className="h-5 w-5" />
               </Button>
               <div className="admin-topbar-search">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7B6B83]" />
                 <Input
                   ref={searchInputRef}
                   value={kbQuery}
@@ -657,7 +665,7 @@ export function AdminLayout() {
                     onMouseDown={(event) => event.preventDefault()}
                   >
                     {searchLoading && kbOptions.length === 0 && docOptions.length === 0 ? (
-                      <div className="admin-topbar-suggest-item text-slate-400">搜索中...</div>
+                      <div className="admin-topbar-suggest-item text-[#7B6B83]">搜索中...</div>
                     ) : null}
                     {kbOptions.length > 0 ? (
                       <div className="admin-topbar-suggest-section">
@@ -672,8 +680,8 @@ export function AdminLayout() {
                             }}
                             className="admin-topbar-suggest-item"
                           >
-                            <span className="font-medium text-slate-900">{kb.name}</span>
-                            <span className="text-xs text-slate-400">
+                            <span className="font-medium text-[#251C2D]">{kb.name}</span>
+                            <span className="text-xs text-[#7B6B83]">
                               {kb.collectionName || "未设置 Collection"}
                             </span>
                           </button>
@@ -693,8 +701,8 @@ export function AdminLayout() {
                             }}
                             className="admin-topbar-suggest-item"
                           >
-                            <span className="font-medium text-slate-900">{doc.docName}</span>
-                            <span className="text-xs text-slate-400">
+                            <span className="font-medium text-[#251C2D]">{doc.docName}</span>
+                            <span className="text-xs text-[#7B6B83]">
                               {doc.kbName || `知识库 ${doc.kbId}`}
                             </span>
                           </button>
@@ -702,7 +710,7 @@ export function AdminLayout() {
                       </div>
                     ) : null}
                     {!searchLoading && kbOptions.length === 0 && docOptions.length === 0 ? (
-                      <div className="admin-topbar-suggest-item text-slate-400">暂无匹配结果</div>
+                      <div className="admin-topbar-suggest-item text-[#7B6B83]">暂无匹配结果</div>
                     ) : null}
                   </div>
                 ) : null}
@@ -718,15 +726,15 @@ export function AdminLayout() {
                 返回聊天
               </Button>
               <a
-                href="https://github.com/nageoffer/ragent"
+                href="https://github.com/Swing-G/LiuGuang"
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+                className="flex items-center gap-2 rounded-xl border border-[#E8DDCF] bg-[#FFFDF8] px-3 py-1.5 text-sm text-[#6E5B78] transition hover:bg-[#FFF8EF] hover:text-[#251C2D]"
                 aria-label="打开 GitHub 仓库"
               >
                 <Github className="h-4 w-4" />
                 <span className="font-medium">Star</span>
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                <span className="rounded-full bg-[#FFF8EF] px-2 py-0.5 text-xs text-[#6E5B78]">
                   {starLabel}
                 </span>
               </a>
@@ -734,20 +742,20 @@ export function AdminLayout() {
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-600 shadow-sm"
+                    className="flex items-center gap-2 rounded-full border border-[#E8DDCF] bg-[#FFFDF8] px-2.5 py-1.5 text-sm text-[#6E5B78] shadow-sm"
                     aria-label="用户菜单"
                   >
                     <Avatar
                       name={user?.username || "管理员"}
                       src={showAvatar ? avatarUrl : undefined}
-                      className="h-8 w-8 border-slate-200 bg-indigo-50 text-xs font-semibold text-indigo-600"
+                      className="h-8 w-8 border-[#E8DDCF] bg-[#FFE8DC] text-xs font-semibold text-[#B4533A]"
                     />
                     <span className="hidden sm:inline">{user?.username || "管理员"}</span>
-                    <ChevronDown className="h-4 w-4 text-slate-400" />
+                    <ChevronDown className="h-4 w-4 text-[#7B6B83]" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" sideOffset={8} className="w-44">
-                  <div className="px-3 py-2 text-xs text-slate-500">
+                  <div className="px-3 py-2 text-xs text-[#7B6B83]">
                     {user?.username || "管理员"} · {roleLabel}
                   </div>
                   <DropdownMenuSeparator />
