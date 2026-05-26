@@ -118,7 +118,8 @@ public class WorkflowChatRouter {
                 workflow.getId(), workflow.getWorkflowType(), identifiers.ticketId(), identifiers.accountId(), identifiers.orderId());
         boolean quickTriageFlow = TICKET_QUICK_TRIAGE_WORKFLOW_TYPE.equals(workflow.getWorkflowType());
         boolean pureReActFlow = "pure_react_reasoning_chat".equals(workflow.getWorkflowType());
-        if (!identifiers.hasAnyLookupKey() && !quickTriageFlow && !pureReActFlow) {
+        boolean planExecuteFlow = "plan_execute_reasoning_chat".equals(workflow.getWorkflowType());
+        if (!identifiers.hasAnyLookupKey() && !quickTriageFlow && !pureReActFlow && !planExecuteFlow) {
             completeWithAssistantMessage(conversationId, userId, callback, buildMissingInfoReply());
             return true;
         }
@@ -311,6 +312,13 @@ public class WorkflowChatRouter {
                 return nested;
             }
         }
+        JsonNode planExecuteSummary = node.path("planExecuteSummary");
+        if (!planExecuteSummary.isMissingNode()) {
+            String nested = planExecuteSummary.path(field).asText(null);
+            if (StringUtils.hasText(nested)) {
+                return nested;
+            }
+        }
         JsonNode buildFollowupPlan = node.path("buildFollowupPlan");
         if (!buildFollowupPlan.isMissingNode()) {
             String nested = buildFollowupPlan.path(field).asText(null);
@@ -363,6 +371,14 @@ public class WorkflowChatRouter {
         if (isPresentNode(analysis)) {
             return analysis;
         }
+        analysis = context.path("planExecuteSummary");
+        if (isPresentNode(analysis)) {
+            return analysis;
+        }
+        analysis = normalizePlanExecuteAnswer(context.path("planExecute"));
+        if (isPresentNode(analysis)) {
+            return analysis;
+        }
         analysis = context.path("buildFollowupPlan");
         if (isPresentNode(analysis)) {
             return analysis;
@@ -395,6 +411,34 @@ public class WorkflowChatRouter {
         output.put("customerReply", firstPresentText(answer, "customerReply", "reply", "finalReply", answer.toString()));
         output.set("reactAnswer", answer);
         output.set("reactSteps", reactReasoning.path("steps"));
+        return output;
+    }
+
+    private JsonNode normalizePlanExecuteAnswer(JsonNode planExecute) {
+        if (!isPresentNode(planExecute)) {
+            return null;
+        }
+        JsonNode answer = planExecute.path("answer");
+        if (!isPresentNode(answer)) {
+            answer = planExecute.path("execution").path("answer");
+        }
+        if (!isPresentNode(answer)) {
+            return null;
+        }
+        ObjectNode output = objectMapper.createObjectNode();
+        output.put("ticketId", answer.path("ticketId").asText("PLAN-EXECUTE-DEMO"));
+        output.put("accountId", answer.path("accountId").asText("PLAN-EXECUTE-DEMO"));
+        output.put("customerName", answer.path("customerName").asText("您好"));
+        output.put("subject", answer.path("subject").asText("Plan-and-Execute 推理任务"));
+        output.put("riskLevel", answer.path("riskLevel").asText(answer.path("priority").asText("MEDIUM")));
+        output.put("rootCause", firstPresentText(answer, "rootCause", "analysis", "reason", "Plan-and-Execute 已完成执行，但未输出明确原因。"));
+        output.put("currentState", firstPresentText(answer, "currentState", "state", "status", "Plan-and-Execute 节点已生成执行结果。"));
+        output.put("latestNote", "该结果来自 Plan-and-Execute 节点 answer。" );
+        output.put("suggestion", firstPresentText(answer, "suggestion", "plan", "nextStep", "建议结合现有信息继续人工核实。"));
+        output.put("customerReply", firstPresentText(answer, "customerReply", "reply", "finalReply", answer.toString()));
+        output.set("plan", planExecute.path("plan"));
+        output.set("execution", planExecute.path("execution"));
+        output.set("planExecuteSteps", planExecute.path("steps"));
         return output;
     }
 

@@ -703,6 +703,113 @@ export function buildPureReActReasoningWorkflow(): AgentWorkflowCreatePayload {
   };
 }
 
+export function buildPlanExecuteReasoningWorkflow(): AgentWorkflowCreatePayload {
+  return {
+    name: "Plan-and-Execute 推理 Workflow",
+    description:
+      "演示 Plan-and-Execute 在单个 Workflow 节点内先规划再逐步执行：第一个节点把任务拆成多个执行步骤，每个步骤可自主决定是否调用 MCP 工具，第二个节点验收结果，第三个节点整理成对话可返回的总结结果。",
+    workflowType: "plan_execute_reasoning_chat",
+    harnessType: "FLOW",
+    status: "ENABLED",
+    config: {
+      flowScenario: "Plan-and-Execute 推理",
+      flowGoal: "验证单个节点内先制定计划，再基于计划执行并输出最终答案",
+      memoryEnabled: true,
+      memoryStrategyType: "LAYERED",
+      memorySummaryInterval: 1
+    },
+    inputSchema: {
+      type: "object",
+      properties: {
+        question: { type: "string" },
+        content: { type: "string" },
+        ticketId: { type: "string" },
+        accountId: { type: "string" },
+        orderId: { type: "string" }
+      }
+    },
+    outputSchema: { type: "object" },
+    nodes: [
+      {
+        nodeKey: "planExecute",
+        nodeName: "Plan-and-Execute 计划执行",
+        nodeType: "ACTION",
+        actionType: "NOOP",
+        nodeOrder: 1,
+        config: {
+          strategyType: "PLAN_EXECUTE",
+          temperature: 0.2,
+          maxTokens: 1200,
+          maxSteps: 5,
+          taskPrompt:
+            "你需要针对用户问题先拆解多个执行步骤，再逐步执行每个步骤。步骤可以自主决定是否调用可用 MCP 工具；当输入里有账号、工单或订单编号时，计划中必须包含一个 toolHint=queryAccountStatus 的查询步骤。最终 answer 必须是 JSON 对象，并包含 rootCause、currentState、suggestion、customerReply、riskLevel 字段。",
+          allowedTools: [
+            {
+              name: "queryAccountStatus",
+              description: "通过 MCP 查询账号状态、封禁原因、续费或订单相关线索。仅在用户提供账号、工单或订单编号时调用。",
+              actionType: "MCP_TOOL",
+              config: {
+                serverName: "ragent-demo",
+                toolName: "ticket.account.query"
+              },
+              parameters: {
+                accountId: "账号编号，例如 A10001",
+                ticketId: "工单编号，可选",
+                orderId: "订单编号，可选"
+              }
+            }
+          ]
+        }
+      },
+      {
+        nodeKey: "evaluatePlanExecuteAnswer",
+        nodeName: "评估计划执行结果",
+        nodeType: "EVALUATOR",
+        nodeOrder: 2,
+        config: {
+          evaluatorType: "RULE",
+          targetNodeKey: "planExecute",
+          requiredFields: ["strategyType", "plan", "execution", "answer"],
+          minLength: 20,
+          maxReflectionRounds: 0,
+          retryNodeKey: "planExecute"
+        }
+      },
+      {
+        nodeKey: "planExecuteSummary",
+        nodeName: "总结计划执行返回",
+        nodeType: "ACTION",
+        actionType: "PLAN_EXECUTE_SUMMARY",
+        nodeOrder: 3,
+        config: {
+          sourceNodeKey: "planExecute"
+        }
+      },
+      { nodeKey: "end", nodeName: "结束", nodeType: "END", nodeOrder: 4, config: {} }
+    ],
+    edges: [
+      {
+        sourceNodeKey: "planExecute",
+        targetNodeKey: "evaluatePlanExecuteAnswer",
+        edgeType: "DEFAULT",
+        priority: 1
+      },
+      {
+        sourceNodeKey: "evaluatePlanExecuteAnswer",
+        targetNodeKey: "planExecuteSummary",
+        edgeType: "DEFAULT",
+        priority: 1
+      },
+      {
+        sourceNodeKey: "planExecuteSummary",
+        targetNodeKey: "end",
+        edgeType: "DEFAULT",
+        priority: 1
+      }
+    ]
+  };
+}
+
 export function buildLayeredMemoryDemoWorkflow(): AgentWorkflowCreatePayload {
   return {
     name: `Workflow 任务级记忆演示 ${new Date().toLocaleTimeString("zh-CN", { hour12: false })}`,

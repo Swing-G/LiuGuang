@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import {
   buildCustomerSuccessFollowupWorkflow,
   buildLayeredMemoryDemoWorkflow,
+  buildPlanExecuteReasoningWorkflow,
   buildPureReActReasoningWorkflow,
   buildReActTicketWorkflow,
   buildTicketQuickTriageWorkflow,
@@ -236,7 +237,7 @@ export function WorkflowPlaygroundPage() {
     }
   }
 
-  async function createWf(type: "ticket" | "quick" | "followup" | "react" | "pureReact" | "demo") {
+  async function createWf(type: "ticket" | "quick" | "followup" | "react" | "pureReact" | "planExecute" | "demo") {
     const template =
       type === "ticket"
         ? buildTicketTriageWorkflow()
@@ -248,7 +249,9 @@ export function WorkflowPlaygroundPage() {
               ? buildReActTicketWorkflow()
               : type === "pureReact"
                 ? buildPureReActReasoningWorkflow()
-                : buildLayeredMemoryDemoWorkflow();
+                : type === "planExecute"
+                  ? buildPlanExecuteReasoningWorkflow()
+                  : buildLayeredMemoryDemoWorkflow();
     setEditor(payloadToEditor(template));
     setEditorMode("create");
     setWorkflowDetail(null);
@@ -403,6 +406,14 @@ export function WorkflowPlaygroundPage() {
               onClick={() => createWf("pureReact")}
             >
               纯 ReAct 节点
+            </Button>
+            <Button
+              variant="outline"
+              className="border-white/20 bg-white/10 text-white hover:bg-white/15"
+              disabled={busy}
+              onClick={() => createWf("planExecute")}
+            >
+              Plan-and-Execute
             </Button>
             <Button
               variant="outline"

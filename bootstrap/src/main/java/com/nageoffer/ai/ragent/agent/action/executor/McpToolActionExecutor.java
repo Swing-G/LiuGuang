@@ -55,7 +55,8 @@ public class McpToolActionExecutor implements AgentActionExecutor {
     @Override
     public ActionResult execute(ActionContext context, ActionConfig config) {
         JsonNode actionConfig = config.getConfig();
-        String toolName = actionConfig == null ? null : actionConfig.path("toolName").asText(null);
+        String rawToolName = actionConfig == null ? null : actionConfig.path("toolName").asText(null);
+        String toolName = normalizeToolName(rawToolName);
         if (!StringUtils.hasText(toolName)) {
             throw new ClientException("MCP工具名称不能为空");
         }
@@ -83,6 +84,13 @@ public class McpToolActionExecutor implements AgentActionExecutor {
                 context.getInstanceId(), context.getNodeKey(), toolName, parameters, isError);
 
         return isError ? ActionResult.fail("MCP工具调用失败", metadata) : ActionResult.success(output, metadata);
+    }
+
+    private String normalizeToolName(String toolName) {
+        if ("queryAccountStatus".equals(toolName)) {
+            return "ticket.account.query";
+        }
+        return toolName;
     }
 
     private Map<String, Object> readParameters(ActionContext context, JsonNode actionConfig) {
