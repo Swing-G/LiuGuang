@@ -15,18 +15,33 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.agent.action.enums;
+package com.nageoffer.ai.ragent.agent.workflow.strategy;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.nageoffer.ai.ragent.agent.workflow.dao.entity.AgentWorkflowInstanceDO;
+import com.nageoffer.ai.ragent.agent.workflow.dao.entity.AgentWorkflowNodeDO;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
- * Agent动作类型
+ * Workflow节点执行策略上下文
  */
-public enum ActionType {
-    NOOP,
-    LLM,
-    RAG_RETRIEVE,
-    TICKET_TRIAGE,
-    TICKET_ACCOUNT_ANALYSIS,
-    MCP_TOOL,
-    REACT_ANSWER_SUMMARY,
-    CONDITION
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class NodeExecutionContext {
+
+    private AgentWorkflowInstanceDO instance;
+
+    private AgentWorkflowNodeDO node;
+
+    private JsonNode originalInput;
+
+    private ObjectNode workflowContext;
+
+    private JsonNode nodeConfig;
 }

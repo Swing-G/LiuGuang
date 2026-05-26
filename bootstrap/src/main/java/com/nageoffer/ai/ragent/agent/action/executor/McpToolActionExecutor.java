@@ -60,6 +60,8 @@ public class McpToolActionExecutor implements AgentActionExecutor {
             throw new ClientException("MCP工具名称不能为空");
         }
         Map<String, Object> parameters = readParameters(context, actionConfig);
+        log.info("Workflow MCP Action准备执行, instanceId={}, nodeKey={}, toolName={}, input={}, parameters={}",
+                context.getInstanceId(), context.getNodeKey(), toolName, context.getInput(), parameters);
         long startMs = System.currentTimeMillis();
         McpToolExecutor executor = mcpToolRegistry.getExecutor(toolName)
                 .orElseThrow(() -> new ClientException("未找到MCP工具: " + toolName));

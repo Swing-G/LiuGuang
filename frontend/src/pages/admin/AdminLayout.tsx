@@ -129,9 +129,32 @@ const menuGroups: MenuGroup[] = [
         icon: Workflow
       },
       {
+        id: "workflows",
         path: "/admin/workflows",
-        label: "Workflow 调试台",
-        icon: GitBranch
+        label: "Workflow 管理",
+        icon: GitBranch,
+        children: [
+          {
+            path: "/admin/workflows",
+            label: "添加与展示",
+            icon: GitBranch
+          },
+          {
+            path: "/admin/workflows/run",
+            label: "运行测试",
+            icon: Workflow
+          },
+          {
+            path: "/admin/workflows/chat-bindings",
+            label: "对话选项绑定",
+            icon: MessageSquare
+          },
+          {
+            path: "/admin/workflows/playground",
+            label: "原调试台",
+            icon: ClipboardList
+          }
+        ]
       },
     ]
   },
@@ -164,7 +187,7 @@ const breadcrumbMap: Record<string, string> = {
   "intent-list": "意图列表",
   ingestion: "数据通道",
   traces: "链路追踪",
-  workflows: "Workflow 调试台",
+  workflows: "Workflow 管理",
   "sample-questions": "示例问题",
   mappings: "关键词映射",
   settings: "系统设置",
@@ -184,7 +207,7 @@ export function AdminLayout() {
     confirmPassword: ""
   });
   const [starCount, setStarCount] = useState<number | null>(null);
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ ingestion: true, intent: true });
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ ingestion: true, intent: true, workflows: true });
   const [kbQuery, setKbQuery] = useState("");
   const [kbOptions, setKbOptions] = useState<KnowledgeBase[]>([]);
   const [docOptions, setDocOptions] = useState<KnowledgeDocumentSearchItem[]>([]);

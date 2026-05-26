@@ -19,17 +19,22 @@ package com.nageoffer.ai.ragent.agent.workflow.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nageoffer.ai.ragent.agent.workflow.controller.request.AgentWorkflowChatOptionRequest;
 import com.nageoffer.ai.ragent.agent.workflow.controller.request.AgentWorkflowCreateRequest;
 import com.nageoffer.ai.ragent.agent.workflow.controller.request.AgentWorkflowRunRequest;
 import com.nageoffer.ai.ragent.agent.workflow.controller.request.AgentWorkflowUpdateRequest;
+import com.nageoffer.ai.ragent.agent.workflow.controller.vo.AgentWorkflowChatOptionVO;
 import com.nageoffer.ai.ragent.agent.workflow.controller.vo.AgentWorkflowInstanceVO;
 import com.nageoffer.ai.ragent.agent.workflow.controller.vo.AgentWorkflowVO;
+import com.nageoffer.ai.ragent.agent.workflow.service.AgentWorkflowChatOptionService;
 import com.nageoffer.ai.ragent.agent.workflow.service.AgentWorkflowService;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * Agent Workflow控制层
@@ -40,6 +45,7 @@ import org.springframework.web.bind.annotation.*;
 public class AgentWorkflowController {
 
     private final AgentWorkflowService workflowService;
+    private final AgentWorkflowChatOptionService chatOptionService;
 
     /**
      * 创建Agent Workflow
@@ -105,6 +111,27 @@ public class AgentWorkflowController {
                                                                @RequestParam(value = "workflowId", required = false) String workflowId) {
         return Results.success(workflowService.pageInstances(new Page<>(pageNo, pageSize), workflowId));
     }
+    @GetMapping("/agent/workflow-chat-options")
+    public Result<List<AgentWorkflowChatOptionVO>> listChatOptions(@RequestParam(value = "enabledOnly", required = false) Boolean enabledOnly) {
+        return Results.success(chatOptionService.list(enabledOnly));
+    }
+
+    @PostMapping("/agent/workflow-chat-options")
+    public Result<AgentWorkflowChatOptionVO> createChatOption(@RequestBody AgentWorkflowChatOptionRequest request) {
+        return Results.success(chatOptionService.create(request));
+    }
+
+    @PutMapping("/agent/workflow-chat-options/{id}")
+    public Result<AgentWorkflowChatOptionVO> updateChatOption(@PathVariable String id, @RequestBody AgentWorkflowChatOptionRequest request) {
+        return Results.success(chatOptionService.update(id, request));
+    }
+
+    @DeleteMapping("/agent/workflow-chat-options/{id}")
+    public Result<Void> deleteChatOption(@PathVariable String id) {
+        chatOptionService.delete(id);
+        return Results.success();
+    }
+
     @GetMapping("/agent/workflow-instances/{id}")
     public Result<AgentWorkflowInstanceVO> getInstance(@PathVariable String id) {
         return Results.success(workflowService.getInstance(id));

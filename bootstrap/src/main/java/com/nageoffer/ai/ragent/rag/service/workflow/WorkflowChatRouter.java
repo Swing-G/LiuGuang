@@ -22,8 +22,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nageoffer.ai.ragent.agent.workflow.controller.request.AgentWorkflowRunRequest;
+import com.nageoffer.ai.ragent.agent.workflow.controller.vo.AgentWorkflowChatOptionVO;
 import com.nageoffer.ai.ragent.agent.workflow.controller.vo.AgentWorkflowInstanceVO;
 import com.nageoffer.ai.ragent.agent.workflow.controller.vo.AgentWorkflowVO;
+import com.nageoffer.ai.ragent.agent.workflow.service.AgentWorkflowChatOptionService;
 import com.nageoffer.ai.ragent.agent.workflow.service.AgentWorkflowService;
 import com.nageoffer.ai.ragent.framework.convention.ChatMessage;
 import com.nageoffer.ai.ragent.framework.convention.ChatRequest;
@@ -58,6 +60,7 @@ public class WorkflowChatRouter {
     private static final Pattern ORDER_ID_PATTERN = Pattern.compile("(?i)(?:PAY|ORD|ORDER)[-_]?[0-9]{4,}");
 
     private final AgentWorkflowService workflowService;
+    private final AgentWorkflowChatOptionService chatOptionService;
     private final ConversationMemoryService memoryService;
     private final ConversationWorkflowRunService conversationWorkflowRunService;
     private final ObjectMapper objectMapper;
@@ -65,6 +68,18 @@ public class WorkflowChatRouter {
 
     public boolean handle(String question, String conversationId, String userId, String workflowType,
                           StreamCallback callback) {
+        AgentWorkflowChatOptionVO chatOption = chatOptionService.findEnabledByOptionKey(workflowType);
+        if (chatOption != null) {
+            AgentWorkflowVO workflow = workflowService.get(chatOption.getWorkflowId());
+            if (workflow != null && "ENABLED".equalsIgnoreCase(workflow.getStatus())) {
+                log.info("对话Workflow命中绑定选项，optionKey={}, workflowId={}, workflowType={}", workflowType, workflow.getId(), workflow.getWorkflowType());
+                List<ChatMessage> history = memoryService.loadAndAppend(conversationId, userId, ChatMessage.user(question));
+                return runOrAskForMoreInfo(question, conversationId, userId, callback, workflow, history);
+            }
+            callback.onContent("当前对话选项绑定的 Workflow 不可用，请联系管理员检查绑定编号。选项=" + workflowType);
+            callback.onComplete();
+            return true;
+        }
         String selectedWorkflowType = resolveWorkflowType(workflowType);
         AgentWorkflowVO workflow = workflowService.findEnabledByType(selectedWorkflowType);
         if (workflow == null) {
@@ -93,20 +108,17 @@ public class WorkflowChatRouter {
         if (!StringUtils.hasText(workflowType)) {
             return DEFAULT_WORKFLOW_TYPE;
         }
-        String normalized = workflowType.trim();
-        if (TICKET_TRIAGE_WORKFLOW_TYPE.equals(normalized)
-                || TICKET_QUICK_TRIAGE_WORKFLOW_TYPE.equals(normalized)
-                || CUSTOMER_SUCCESS_WORKFLOW_TYPE.equals(normalized)) {
-            return normalized;
-        }
-        return DEFAULT_WORKFLOW_TYPE;
+        return workflowType.trim();
     }
 
     private boolean runOrAskForMoreInfo(String question, String conversationId, String userId, StreamCallback callback, AgentWorkflowVO workflow, List<ChatMessage> history) {
         ConversationWorkflowRunDO previousRun = conversationWorkflowRunService.findLatest(conversationId, userId, workflow.getWorkflowType());
         WorkflowIdentifiers identifiers = resolveIdentifiers(question, history, previousRun);
+        log.info("对话Workflow识别编号，workflowId={}, workflowType={}, ticketId={}, accountId={}, orderId={}",
+                workflow.getId(), workflow.getWorkflowType(), identifiers.ticketId(), identifiers.accountId(), identifiers.orderId());
         boolean quickTriageFlow = TICKET_QUICK_TRIAGE_WORKFLOW_TYPE.equals(workflow.getWorkflowType());
-        if (!identifiers.hasAnyLookupKey() && !quickTriageFlow) {
+        boolean pureReActFlow = "pure_react_reasoning_chat".equals(workflow.getWorkflowType());
+        if (!identifiers.hasAnyLookupKey() && !quickTriageFlow && !pureReActFlow) {
             completeWithAssistantMessage(conversationId, userId, callback, buildMissingInfoReply());
             return true;
         }
@@ -285,6 +297,20 @@ public class WorkflowChatRouter {
                 return nested;
             }
         }
+        JsonNode reactDiagnoseTicket = node.path("reactDiagnoseTicket");
+        if (!reactDiagnoseTicket.isMissingNode()) {
+            String nested = reactDiagnoseTicket.path(field).asText(null);
+            if (StringUtils.hasText(nested)) {
+                return nested;
+            }
+        }
+        JsonNode reactSummary = node.path("reactSummary");
+        if (!reactSummary.isMissingNode()) {
+            String nested = reactSummary.path(field).asText(null);
+            if (StringUtils.hasText(nested)) {
+                return nested;
+            }
+        }
         JsonNode buildFollowupPlan = node.path("buildFollowupPlan");
         if (!buildFollowupPlan.isMissingNode()) {
             String nested = buildFollowupPlan.path(field).asText(null);
@@ -325,6 +351,18 @@ public class WorkflowChatRouter {
         if (isPresentNode(analysis)) {
             return analysis;
         }
+        analysis = context.path("reactDiagnoseTicket");
+        if (isPresentNode(analysis)) {
+            return analysis;
+        }
+        analysis = context.path("reactSummary");
+        if (isPresentNode(analysis)) {
+            return analysis;
+        }
+        analysis = normalizePureReActAnswer(context.path("reactReasoning"));
+        if (isPresentNode(analysis)) {
+            return analysis;
+        }
         analysis = context.path("buildFollowupPlan");
         if (isPresentNode(analysis)) {
             return analysis;
@@ -334,6 +372,43 @@ public class WorkflowChatRouter {
             return analysis;
         }
         return null;
+    }
+
+    private JsonNode normalizePureReActAnswer(JsonNode reactReasoning) {
+        if (!isPresentNode(reactReasoning)) {
+            return null;
+        }
+        JsonNode answer = reactReasoning.path("answer");
+        if (!isPresentNode(answer)) {
+            return null;
+        }
+        ObjectNode output = objectMapper.createObjectNode();
+        output.put("ticketId", answer.path("ticketId").asText("REACT-DEMO"));
+        output.put("accountId", answer.path("accountId").asText("REACT-DEMO"));
+        output.put("customerName", answer.path("customerName").asText("您好"));
+        output.put("subject", answer.path("subject").asText("ReAct 推理任务"));
+        output.put("riskLevel", answer.path("riskLevel").asText(answer.path("priority").asText("MEDIUM")));
+        output.put("rootCause", firstPresentText(answer, "rootCause", "analysis", "reason", "ReAct 已完成推理，但未输出明确原因。"));
+        output.put("currentState", firstPresentText(answer, "currentState", "state", "status", "ReAct 节点已生成 final 结果。"));
+        output.put("latestNote", "该结果来自纯 ReAct 节点 final answer。" );
+        output.put("suggestion", firstPresentText(answer, "suggestion", "plan", "nextStep", "建议结合现有信息继续人工核实。"));
+        output.put("customerReply", firstPresentText(answer, "customerReply", "reply", "finalReply", answer.toString()));
+        output.set("reactAnswer", answer);
+        output.set("reactSteps", reactReasoning.path("steps"));
+        return output;
+    }
+
+    private String firstPresentText(JsonNode node, String fieldA, String fieldB, String fieldC, String defaultValue) {
+        String value = node.path(fieldA).asText(null);
+        if (StringUtils.hasText(value)) {
+            return value;
+        }
+        value = node.path(fieldB).asText(null);
+        if (StringUtils.hasText(value)) {
+            return value;
+        }
+        value = node.path(fieldC).asText(null);
+        return StringUtils.hasText(value) ? value : defaultValue;
     }
 
     private boolean isPresentNode(JsonNode node) {
@@ -488,7 +563,7 @@ public class WorkflowChatRouter {
             error = queryResult.path("metadata").path("error").asText(null);
         }
         String hint = StringUtils.hasText(error) ? "原因：" + error : "没有拿到有效的账号、工单或订单查询结果。";
-        return "暂时无法完成查询分析，" + hint + "\n\n请确认编号是否正确，或补充工单编号、账号编号、订单编号中的至少一个后再试。";
+        return "暂时无法完成查询分析，" + hint + "\n\n请确认账号是否正确。";
     }
 
     private record WorkflowIdentifiers(String ticketId, String accountId, String orderId) {

@@ -15,18 +15,10 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.agent.action.enums;
+package com.nageoffer.ai.ragent.agent.workflow.dao.mapper;
 
-/**
- * Agent动作类型
- */
-public enum ActionType {
-    NOOP,
-    LLM,
-    RAG_RETRIEVE,
-    TICKET_TRIAGE,
-    TICKET_ACCOUNT_ANALYSIS,
-    MCP_TOOL,
-    REACT_ANSWER_SUMMARY,
-    CONDITION
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.nageoffer.ai.ragent.agent.workflow.dao.entity.AgentWorkflowChatOptionDO;
+
+public interface AgentWorkflowChatOptionMapper extends BaseMapper<AgentWorkflowChatOptionDO> {
 }

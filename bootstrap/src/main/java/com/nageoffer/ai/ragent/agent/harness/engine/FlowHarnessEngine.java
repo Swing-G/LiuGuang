@@ -21,12 +21,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.nageoffer.ai.ragent.agent.action.domain.ActionConfig;
-import com.nageoffer.ai.ragent.agent.action.domain.ActionContext;
 import com.nageoffer.ai.ragent.agent.action.domain.ActionResult;
 import com.nageoffer.ai.ragent.agent.action.enums.ActionType;
-import com.nageoffer.ai.ragent.agent.action.executor.AgentActionExecutor;
-import com.nageoffer.ai.ragent.agent.action.executor.AgentActionExecutorRegistry;
 import com.nageoffer.ai.ragent.agent.evaluator.core.AgentEvaluator;
 import com.nageoffer.ai.ragent.agent.evaluator.core.AgentEvaluatorRegistry;
 import com.nageoffer.ai.ragent.agent.evaluator.domain.EvaluationContext;
@@ -49,9 +45,13 @@ import com.nageoffer.ai.ragent.agent.workflow.dao.mapper.AgentWorkflowInstanceMa
 import com.nageoffer.ai.ragent.agent.workflow.dao.mapper.AgentWorkflowNodeInstanceMapper;
 import com.nageoffer.ai.ragent.agent.workflow.domain.AgentWorkflowDefinition;
 import com.nageoffer.ai.ragent.agent.workflow.enums.HarnessType;
+import com.nageoffer.ai.ragent.agent.workflow.enums.NodeExecutionStrategyType;
 import com.nageoffer.ai.ragent.agent.workflow.enums.WorkflowEdgeType;
 import com.nageoffer.ai.ragent.agent.workflow.enums.WorkflowNodeInstanceStatus;
 import com.nageoffer.ai.ragent.agent.workflow.enums.WorkflowNodeType;
+import com.nageoffer.ai.ragent.agent.workflow.strategy.NodeExecutionContext;
+import com.nageoffer.ai.ragent.agent.workflow.strategy.NodeExecutionStrategy;
+import com.nageoffer.ai.ragent.agent.workflow.strategy.NodeExecutionStrategyRegistry;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -76,7 +76,7 @@ public class FlowHarnessEngine implements HarnessEngine {
     private final AgentWorkflowNodeInstanceMapper nodeInstanceMapper;
     private final AgentWorkflowCheckpointMapper checkpointMapper;
     private final AgentWorkflowEventMapper eventMapper;
-    private final AgentActionExecutorRegistry executorRegistry;
+    private final NodeExecutionStrategyRegistry strategyRegistry;
     private final AgentEvaluatorRegistry evaluatorRegistry;
     private final AgentReflector reflector;
     private final WorkflowMemoryService workflowMemoryService;
@@ -192,7 +192,7 @@ public class FlowHarnessEngine implements HarnessEngine {
             } else if (WorkflowNodeType.EVALUATOR.name().equals(node.getNodeType())) {
                 result = executeEvaluator(instance, node, context);
             } else {
-                result = executeAction(instance, node, input, context);
+                result = executeStrategy(instance, node, input, context);
             }
             nodeInstance.setStatus(result.isSuccess() ? WorkflowNodeInstanceStatus.SUCCESS.name() : WorkflowNodeInstanceStatus.FAILED.name());
             nodeInstance.setOutputJson(toActionResultJson(result));
@@ -210,12 +210,26 @@ public class FlowHarnessEngine implements HarnessEngine {
         }
     }
 
-    private ActionResult executeAction(AgentWorkflowInstanceDO instance, AgentWorkflowNodeDO node, JsonNode input, ObjectNode context) {
-        String actionType = StringUtils.hasText(node.getActionType()) ? node.getActionType() : ActionType.NOOP.name();
-        AgentActionExecutor executor = executorRegistry.getRequired(actionType);
-        return executor.execute(ActionContext.builder().instanceId(instance.getId()).workflowId(instance.getWorkflowId())
-                .nodeKey(node.getNodeKey()).input(asObject(input)).context(context).build(),
-                ActionConfig.builder().actionType(actionType).config(parse(node.getConfigJson())).build());
+    private ActionResult executeStrategy(AgentWorkflowInstanceDO instance, AgentWorkflowNodeDO node, JsonNode input, ObjectNode context) {
+        JsonNode config = parse(node.getConfigJson());
+        String strategyType = resolveStrategyType(node, config);
+        NodeExecutionStrategy strategy = strategyRegistry.getRequired(strategyType);
+        return strategy.execute(NodeExecutionContext.builder()
+                .instance(instance)
+                .node(node)
+                .originalInput(input)
+                .workflowContext(context)
+                .nodeConfig(config == null ? objectMapper.createObjectNode() : config)
+                .build());
+    }
+
+    private String resolveStrategyType(AgentWorkflowNodeDO node, JsonNode config) {
+        String actionType = node == null ? null : node.getActionType();
+        if (StringUtils.hasText(actionType) && !ActionType.NOOP.name().equals(actionType)) {
+            return NodeExecutionStrategyType.PIPELINE.name();
+        }
+        String strategyType = config == null ? null : config.path("strategyType").asText(null);
+        return StringUtils.hasText(strategyType) ? strategyType : NodeExecutionStrategyType.PIPELINE.name();
     }
 
     private ActionResult executeEvaluator(AgentWorkflowInstanceDO instance, AgentWorkflowNodeDO node, ObjectNode context) {
@@ -314,7 +328,6 @@ public class FlowHarnessEngine implements HarnessEngine {
         return context.path("reflection").path("retryNodeKey").asText("").equals(nodeKey) ? context.path("reflection").path("retryCount").asInt(0) : 0;
     }
 
-    private ObjectNode asObject(JsonNode node) { return node != null && node.isObject() ? (ObjectNode) node : objectMapper.createObjectNode(); }
     private String toActionResultJson(ActionResult result) { try { return objectMapper.writeValueAsString(result); } catch (Exception ex) { throw new ClientException("ActionResult序列化失败"); } }
     private String json(JsonNode node) { return node == null || node.isNull() ? null : node.toString(); }
     private JsonNode parse(String raw) { if (!StringUtils.hasText(raw)) return null; try { return objectMapper.readTree(raw); } catch (Exception ex) { throw new ClientException("JSON解析失败"); } }

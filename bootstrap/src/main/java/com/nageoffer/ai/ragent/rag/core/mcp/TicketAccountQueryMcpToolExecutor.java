@@ -23,6 +23,7 @@ import io.modelcontextprotocol.spec.McpSchema.JsonSchema;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -35,6 +36,7 @@ import java.util.Map;
 /**
  * 本地账号工单查询 MCP 工具
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class TicketAccountQueryMcpToolExecutor implements McpToolExecutor {
@@ -67,6 +69,7 @@ public class TicketAccountQueryMcpToolExecutor implements McpToolExecutor {
         String ticketId = readText(parameters, "ticketId");
         String accountId = readText(parameters, "accountId");
         String orderId = readText(parameters, "orderId");
+        log.info("ticket.account.query 收到查询参数: ticketId={}, accountId={}, orderId={}", ticketId, accountId, orderId);
         if (!StringUtils.hasText(ticketId) && !StringUtils.hasText(accountId) && !StringUtils.hasText(orderId)) {
             return error("缺少 ticketId、accountId 或 orderId，至少需要提供一个查询条件");
         }
@@ -133,6 +136,7 @@ public class TicketAccountQueryMcpToolExecutor implements McpToolExecutor {
         }
         sql.append(" ORDER BY t.update_time DESC NULLS LAST, p.pay_time DESC NULLS LAST LIMIT 1");
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql.toString(), params);
+        log.info("ticket.account.query 查询完成: rows={}, ticketId={}, accountId={}, orderId={}", rows.size(), ticketId, accountId, orderId);
         return rows.isEmpty() ? null : rows.get(0);
     }
 

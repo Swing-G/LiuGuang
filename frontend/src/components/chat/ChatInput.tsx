@@ -10,9 +10,10 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { getAgentWorkflowChatOptions, type AgentWorkflowChatOption, type AgentWorkflowChatPromptPreset } from "@/services/workflowService";
 import { useChatStore } from "@/stores/chatStore";
 
-type ChatModeKey = "RAG" | "WORKFLOW" | "REACT" | "PAE";
+type ChatModeKey = "RAG" | "WORKFLOW";
 
 type PromptPreset = {
   title: string;
@@ -65,7 +66,7 @@ const FLOW_PROMPT_PRESETS: Record<string, PromptPreset[]> = {
   ]
 };
 
-const MODE_PROMPT_PRESETS: Record<Exclude<ChatModeKey, "WORKFLOW">, PromptPreset[]> = {
+const MODE_PROMPT_PRESETS: Record<"RAG", PromptPreset[]> = {
   RAG: [
     {
       title: "查询公司制度",
@@ -77,42 +78,32 @@ const MODE_PROMPT_PRESETS: Record<Exclude<ChatModeKey, "WORKFLOW">, PromptPreset
       description: "面向内部员工的问题检索",
       prompt: "请查询 IT 支持相关文档，说明账号无法登录时应该如何排查和提交工单。"
     }
-  ],
-  REACT: [
-    {
-      title: "排查接口异常",
-      description: "按观察、分析、行动的方式定位问题",
-      prompt:
-        "线上接口最近 10 分钟错误率升高，请按 ReAct 思路帮我制定排查步骤，包含需要观察的日志、指标和可能原因。"
-    },
-    {
-      title: "排查数据库慢查询",
-      description: "生成运维故障排查路径",
-      prompt:
-        "数据库响应变慢，业务侧出现超时。请帮我按运维故障排查 Agent 的方式分析可能原因和处理步骤。"
-    }
-  ],
-  PAE: [
-    {
-      title: "生成技术方案",
-      description: "输出背景、目标、架构、风险和实施计划",
-      prompt:
-        "请帮我生成一份技术方案：为当前 RAG 系统增加多租户知识库隔离能力，包含目标、架构设计、数据模型、接口改造、风险和里程碑。"
-    },
-    {
-      title: "评审改造方案",
-      description: "从可行性、复杂度和风险角度分析",
-      prompt:
-        "请评审一个方案：将同步知识入库流程改造成异步任务队列。请分析收益、风险、改造步骤和回滚策略。"
-    }
   ]
 };
 
-function getPromptPresets(chatMode: ChatModeKey, workflowType: string) {
-  if (chatMode === "WORKFLOW") {
-    return FLOW_PROMPT_PRESETS[workflowType] || FLOW_PROMPT_PRESETS.ticket_triage_chat;
+function normalizePromptPresets(value: AgentWorkflowChatOption["promptPresets"]): PromptPreset[] {
+  if (!value) return [];
+  try {
+    const parsed = typeof value === "string" ? JSON.parse(value) : value;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((item): item is AgentWorkflowChatPromptPreset => Boolean(item?.title && item?.prompt))
+      .map((item) => ({
+        title: item.title,
+        description: item.description || "自定义对话模板",
+        prompt: item.prompt
+      }));
+  } catch {
+    return [];
   }
-  return MODE_PROMPT_PRESETS[chatMode];
+}
+
+function getPromptPresets(chatMode: ChatModeKey, workflowType: string, workflowOptions: AgentWorkflowChatOption[]) {
+  if (chatMode === "WORKFLOW") {
+    const optionPresets = normalizePromptPresets(workflowOptions.find((option) => option.optionKey === workflowType)?.promptPresets);
+    return optionPresets.length > 0 ? optionPresets : FLOW_PROMPT_PRESETS[workflowType] || [];
+  }
+  return MODE_PROMPT_PRESETS.RAG;
 }
 
 function getInputPlaceholder(
@@ -128,11 +119,7 @@ function getInputPlaceholder(
         : workflowType === "customer_success_followup_chat"
           ? "客户回访"
           : "工单分析"
-      : chatMode === "REACT"
-        ? "故障排查"
-        : chatMode === "PAE"
-          ? "技术方案"
-          : "知识库问答";
+      : "知识库问答";
   return `${prefix}，输入 / 选择${modeHint}预设提示词`;
 }
 
@@ -141,6 +128,7 @@ export function ChatInput() {
   const [isFocused, setIsFocused] = React.useState(false);
   const [activePresetIndex, setActivePresetIndex] = React.useState(0);
   const isComposingRef = React.useRef(false);
+  const [workflowOptions, setWorkflowOptions] = React.useState<AgentWorkflowChatOption[]>([]);
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
   const {
     sendMessage,
@@ -154,10 +142,28 @@ export function ChatInput() {
     setWorkflowType,
     inputFocusKey
   } = useChatStore();
+  const selectedModeValue = chatMode === "RAG" ? "RAG" : workflowType;
+
+  React.useEffect(() => {
+    getAgentWorkflowChatOptions(true)
+      .then((items) => {
+        setWorkflowOptions(items);
+      })
+      .catch(() => null);
+  }, []);
+
+  function handleModeSelect(value: string) {
+    if (value === "RAG") {
+      setChatMode("RAG");
+      return;
+    }
+    setChatMode("WORKFLOW");
+    setWorkflowType(value);
+  }
 
   const promptPresets = React.useMemo(
-    () => getPromptPresets(chatMode as ChatModeKey, workflowType),
-    [chatMode, workflowType]
+    () => getPromptPresets(chatMode as ChatModeKey, workflowType, workflowOptions),
+    [chatMode, workflowType, workflowOptions]
   );
   const showPromptMenu = isFocused && value.trimStart().startsWith("/") && promptPresets.length > 0;
 
@@ -324,29 +330,19 @@ export function ChatInput() {
           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-[10px] bg-gradient-to-b from-white/0 via-white/40 to-white/90" />
         </div>
         <div className="relative mt-2 flex flex-wrap items-center gap-2">
-          <Select value={chatMode} onValueChange={setChatMode} disabled={isStreaming}>
-            <SelectTrigger className="h-8 w-[158px] rounded-xl border-[#EADFD2] bg-[#FFF8EE]/72 text-xs text-[#5C4A66] shadow-none">
+          <Select value={selectedModeValue} onValueChange={handleModeSelect} disabled={isStreaming}>
+            <SelectTrigger className="h-8 w-[210px] rounded-xl border-[#EADFD2] bg-[#FFF8EE]/72 text-xs text-[#5C4A66] shadow-none">
               <SelectValue placeholder="选择模式" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="RAG">私域问答-RAG</SelectItem>
-              <SelectItem value="WORKFLOW">可控流程-Flow</SelectItem>
-              <SelectItem value="REACT">运维故障排查 Agent-ReAct</SelectItem>
-              <SelectItem value="PAE">技术方案生成-PAE</SelectItem>
+              {workflowOptions.map((option) => (
+                <SelectItem key={option.id} value={option.optionKey}>
+                  {option.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
-          {chatMode === "WORKFLOW" ? (
-            <Select value={workflowType} onValueChange={setWorkflowType} disabled={isStreaming}>
-              <SelectTrigger className="h-8 w-[210px] rounded-xl border-[#EADFD2] bg-white/72 text-xs text-[#5C4A66] shadow-none">
-                <SelectValue placeholder="选择 Flow 方向" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ticket_triage_chat">工单账号深度分析</SelectItem>
-                <SelectItem value="ticket_quick_triage_chat">工单初筛与分派</SelectItem>
-                <SelectItem value="customer_success_followup_chat">客户成功回访建议</SelectItem>
-              </SelectContent>
-            </Select>
-          ) : null}
           <button
             type="button"
             onClick={() => setDeepThinkingEnabled(!deepThinkingEnabled)}

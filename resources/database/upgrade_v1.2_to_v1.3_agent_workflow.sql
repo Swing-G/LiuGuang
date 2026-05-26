@@ -159,6 +159,29 @@ CREATE INDEX IF NOT EXISTS idx_agent_workflow_memory_summary_instance ON t_agent
 CREATE INDEX IF NOT EXISTS idx_agent_workflow_memory_summary_strategy ON t_agent_workflow_memory_summary (instance_id, strategy_type);
 COMMENT ON TABLE t_agent_workflow_memory_summary IS 'Agent Workflow任务级记忆摘要表';
 
+CREATE TABLE IF NOT EXISTS t_agent_workflow_chat_option (
+    id             VARCHAR(20)  NOT NULL PRIMARY KEY,
+    option_key     VARCHAR(64)  NOT NULL,
+    label          VARCHAR(128) NOT NULL,
+    description    VARCHAR(512),
+    workflow_id    VARCHAR(20)  NOT NULL,
+    workflow_type  VARCHAR(64),
+    enabled        SMALLINT     DEFAULT 1,
+    sort_order     INTEGER      DEFAULT 0,
+    prompt_presets JSONB,
+    create_time    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    update_time    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    deleted        SMALLINT     DEFAULT 0,
+    CONSTRAINT uk_agent_workflow_chat_option_key UNIQUE (option_key)
+);
+CREATE INDEX IF NOT EXISTS idx_agent_workflow_chat_option_enabled ON t_agent_workflow_chat_option (enabled, sort_order);
+CREATE INDEX IF NOT EXISTS idx_agent_workflow_chat_option_workflow ON t_agent_workflow_chat_option (workflow_id);
+ALTER TABLE t_agent_workflow_chat_option ADD COLUMN IF NOT EXISTS prompt_presets JSONB;
+COMMENT ON TABLE t_agent_workflow_chat_option IS '用户对话Workflow选项绑定表';
+COMMENT ON COLUMN t_agent_workflow_chat_option.option_key IS '前端对话框传入的选项Key';
+COMMENT ON COLUMN t_agent_workflow_chat_option.workflow_id IS '绑定的Workflow定义编号';
+COMMENT ON COLUMN t_agent_workflow_chat_option.prompt_presets IS '输入 / 时展示的对话提示词模板，JSON数组格式';
+
 CREATE TABLE IF NOT EXISTS t_conversation_workflow_run (
     id                   VARCHAR(20) NOT NULL PRIMARY KEY,
     conversation_id      VARCHAR(64) NOT NULL,

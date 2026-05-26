@@ -19,7 +19,7 @@ import { buildQuery } from "@/utils/helpers";
 import { createStreamResponse } from "@/hooks/useStreamResponse";
 import { storage } from "@/utils/storage";
 
-type ChatMode = "RAG" | "WORKFLOW" | "REACT" | "PAE";
+type ChatMode = "RAG" | "WORKFLOW";
 
 interface ChatState {
   sessions: Session[];

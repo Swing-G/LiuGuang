@@ -20,7 +20,10 @@ import { SystemSettingsPage } from "@/pages/admin/settings/SystemSettingsPage";
 import { SampleQuestionPage } from "@/pages/admin/sample-questions/SampleQuestionPage";
 import { QueryTermMappingPage } from "@/pages/admin/query-term-mapping/QueryTermMappingPage";
 import { UserListPage } from "@/pages/admin/users/UserListPage";
+import { WorkflowChatBindingPage } from "@/pages/admin/workflows/WorkflowChatBindingPage";
+import { WorkflowManagePage } from "@/pages/admin/workflows/WorkflowManagePage";
 import { WorkflowPlaygroundPage } from "@/pages/admin/workflows/WorkflowPlaygroundPage";
+import { WorkflowRunPage } from "@/pages/admin/workflows/WorkflowRunPage";
 import { useAuthStore } from "@/stores/authStore";
 
 function RequireAuth({ children }: { children: JSX.Element }) {
@@ -146,7 +149,19 @@ export const router = createBrowserRouter([
       },
       {
         path: "workflows",
+        element: <WorkflowManagePage />
+      },
+      {
+        path: "workflows/playground",
         element: <WorkflowPlaygroundPage />
+      },
+      {
+        path: "workflows/run",
+        element: <WorkflowRunPage />
+      },
+      {
+        path: "workflows/chat-bindings",
+        element: <WorkflowChatBindingPage />
       },
       {
         path: "traces/:traceId",

@@ -15,18 +15,22 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.agent.action.enums;
+package com.nageoffer.ai.ragent.agent.workflow.strategy;
+
+import com.nageoffer.ai.ragent.agent.action.domain.ActionResult;
 
 /**
- * Agent动作类型
+ * Workflow节点内部执行策略
  */
-public enum ActionType {
-    NOOP,
-    LLM,
-    RAG_RETRIEVE,
-    TICKET_TRIAGE,
-    TICKET_ACCOUNT_ANALYSIS,
-    MCP_TOOL,
-    REACT_ANSWER_SUMMARY,
-    CONDITION
+public interface NodeExecutionStrategy {
+
+    /**
+     * 策略类型
+     */
+    String strategyType();
+
+    /**
+     * 执行节点
+     */
+    ActionResult execute(NodeExecutionContext context);
 }

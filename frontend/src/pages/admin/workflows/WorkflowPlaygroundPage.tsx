@@ -21,6 +21,8 @@ import { cn } from "@/lib/utils";
 import {
   buildCustomerSuccessFollowupWorkflow,
   buildLayeredMemoryDemoWorkflow,
+  buildPureReActReasoningWorkflow,
+  buildReActTicketWorkflow,
   buildTicketQuickTriageWorkflow,
   buildTicketTriageWorkflow,
   createAgentWorkflow,
@@ -234,7 +236,7 @@ export function WorkflowPlaygroundPage() {
     }
   }
 
-  async function createWf(type: "ticket" | "quick" | "followup" | "demo") {
+  async function createWf(type: "ticket" | "quick" | "followup" | "react" | "pureReact" | "demo") {
     const template =
       type === "ticket"
         ? buildTicketTriageWorkflow()
@@ -242,7 +244,11 @@ export function WorkflowPlaygroundPage() {
           ? buildTicketQuickTriageWorkflow()
           : type === "followup"
             ? buildCustomerSuccessFollowupWorkflow()
-            : buildLayeredMemoryDemoWorkflow();
+            : type === "react"
+              ? buildReActTicketWorkflow()
+              : type === "pureReact"
+                ? buildPureReActReasoningWorkflow()
+                : buildLayeredMemoryDemoWorkflow();
     setEditor(payloadToEditor(template));
     setEditorMode("create");
     setWorkflowDetail(null);
@@ -381,6 +387,22 @@ export function WorkflowPlaygroundPage() {
               onClick={() => createWf("followup")}
             >
               客户回访建议
+            </Button>
+            <Button
+              variant="outline"
+              className="border-white/20 bg-white/10 text-white hover:bg-white/15"
+              disabled={busy}
+              onClick={() => createWf("react")}
+            >
+              ReAct 工具推理
+            </Button>
+            <Button
+              variant="outline"
+              className="border-white/20 bg-white/10 text-white hover:bg-white/15"
+              disabled={busy}
+              onClick={() => createWf("pureReact")}
+            >
+              纯 ReAct 节点
             </Button>
             <Button
               variant="outline"

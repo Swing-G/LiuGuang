@@ -15,18 +15,36 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.agent.action.enums;
+package com.nageoffer.ai.ragent.agent.workflow.controller.vo;
 
-/**
- * Agent动作类型
- */
-public enum ActionType {
-    NOOP,
-    LLM,
-    RAG_RETRIEVE,
-    TICKET_TRIAGE,
-    TICKET_ACCOUNT_ANALYSIS,
-    MCP_TOOL,
-    REACT_ANSWER_SUMMARY,
-    CONDITION
+import lombok.Data;
+
+import java.util.Date;
+
+@Data
+public class AgentWorkflowChatOptionVO {
+
+    private String id;
+
+    private String optionKey;
+
+    private String label;
+
+    private String description;
+
+    private String workflowId;
+
+    private String workflowName;
+
+    private String workflowType;
+
+    private Boolean enabled;
+
+    private Integer sortOrder;
+
+    private String promptPresets;
+
+    private Date createTime;
+
+    private Date updateTime;
 }

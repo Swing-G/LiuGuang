@@ -136,6 +136,37 @@ export interface AgentWorkflowCreatePayload {
 
 export type AgentWorkflowUpdatePayload = AgentWorkflowCreatePayload;
 
+export interface AgentWorkflowChatPromptPreset {
+  title: string;
+  description?: string;
+  prompt: string;
+}
+
+export interface AgentWorkflowChatOption {
+  id: string;
+  optionKey: string;
+  label: string;
+  description?: string | null;
+  workflowId: string;
+  workflowName?: string | null;
+  workflowType?: string | null;
+  enabled?: boolean | null;
+  sortOrder?: number | null;
+  promptPresets?: AgentWorkflowChatPromptPreset[] | string | null;
+  createTime?: string | null;
+  updateTime?: string | null;
+}
+
+export interface AgentWorkflowChatOptionPayload {
+  optionKey: string;
+  label: string;
+  description?: string;
+  workflowId: string;
+  enabled: boolean;
+  sortOrder?: number;
+  promptPresets?: AgentWorkflowChatPromptPreset[] | string;
+}
+
 export interface AgentWorkflowRunPayload {
   businessType: string;
   businessId: string;
@@ -212,6 +243,38 @@ export async function getAgentWorkflowInstances(
       }
     }
   );
+}
+
+export async function getAgentWorkflowChatOptions(
+  enabledOnly?: boolean
+): Promise<AgentWorkflowChatOption[]> {
+  return api.get<AgentWorkflowChatOption[], AgentWorkflowChatOption[]>(
+    "/agent/workflow-chat-options",
+    { params: { enabledOnly: enabledOnly || undefined } }
+  );
+}
+
+export async function createAgentWorkflowChatOption(
+  payload: AgentWorkflowChatOptionPayload
+): Promise<AgentWorkflowChatOption> {
+  return api.post<AgentWorkflowChatOption, AgentWorkflowChatOption>(
+    "/agent/workflow-chat-options",
+    payload
+  );
+}
+
+export async function updateAgentWorkflowChatOption(
+  id: string,
+  payload: AgentWorkflowChatOptionPayload
+): Promise<AgentWorkflowChatOption> {
+  return api.put<AgentWorkflowChatOption, AgentWorkflowChatOption>(
+    `/agent/workflow-chat-options/${id}`,
+    payload
+  );
+}
+
+export async function deleteAgentWorkflowChatOption(id: string): Promise<void> {
+  return api.delete<void, void>(`/agent/workflow-chat-options/${id}`);
 }
 
 export function buildTicketTriageWorkflow(): AgentWorkflowCreatePayload {
@@ -456,6 +519,190 @@ export function buildCustomerSuccessFollowupWorkflow(): AgentWorkflowCreatePaylo
     ]
   };
 }
+export function buildReActTicketWorkflow(): AgentWorkflowCreatePayload {
+  return {
+    name: "ReAct 工单工具推理 Workflow",
+    description:
+      "演示 Workflow 内部节点使用 ReAct 策略：模型先判断是否需要调用工具，再基于工具观察结果输出最终处理建议，外层仍由 FlowHarness 负责节点流转、Evaluator 验收与状态观测。",
+    workflowType: "react_ticket_tool_reasoning_chat",
+    harnessType: "FLOW",
+    status: "ENABLED",
+    config: {
+      flowScenario: "ReAct 工具推理",
+      flowGoal: "在单个 Workflow 节点内部完成工具选择、观察反馈和最终答案生成",
+      memoryEnabled: true,
+      memoryStrategyType: "LAYERED",
+      memorySummaryInterval: 1
+    },
+    inputSchema: {
+      type: "object",
+      properties: {
+        ticketId: { type: "string" },
+        accountId: { type: "string" },
+        orderId: { type: "string" },
+        content: { type: "string" },
+        question: { type: "string" }
+      }
+    },
+    outputSchema: { type: "object" },
+    nodes: [
+      {
+        nodeKey: "queryAccountTicket",
+        nodeName: "查询账号工单上下文",
+        nodeType: "ACTION",
+        actionType: "MCP_TOOL",
+        nodeOrder: 1,
+        config: {
+          toolName: "ticket.account.query",
+          inputParameters: ["ticketId", "accountId", "orderId"]
+        }
+      },
+      {
+        nodeKey: "reactDiagnoseTicket",
+        nodeName: "ReAct 诊断工单",
+        nodeType: "ACTION",
+        actionType: "TICKET_ACCOUNT_ANALYSIS",
+        nodeOrder: 2,
+        config: {
+          sourceNodeKey: "queryAccountTicket"
+        }
+      },
+      {
+        nodeKey: "evaluateReActResult",
+        nodeName: "验收 ReAct 输出",
+        nodeType: "EVALUATOR",
+        nodeOrder: 3,
+        config: {
+          evaluatorType: "RULE",
+          targetNodeKey: "reactDiagnoseTicket",
+          requiredFields: ["ticketId", "accountId", "riskLevel", "rootCause", "suggestion", "customerReply"],
+          minLength: 20,
+          maxReflectionRounds: 0,
+          retryNodeKey: "reactDiagnoseTicket"
+        }
+      },
+      { nodeKey: "end", nodeName: "结束", nodeType: "END", nodeOrder: 4, config: {} }
+    ],
+    edges: [
+      {
+        sourceNodeKey: "queryAccountTicket",
+        targetNodeKey: "reactDiagnoseTicket",
+        edgeType: "DEFAULT",
+        priority: 1
+      },
+      {
+        sourceNodeKey: "reactDiagnoseTicket",
+        targetNodeKey: "evaluateReActResult",
+        edgeType: "DEFAULT",
+        priority: 1
+      },
+      { sourceNodeKey: "evaluateReActResult", targetNodeKey: "end", edgeType: "DEFAULT", priority: 1 }
+    ]
+  };
+}
+
+export function buildPureReActReasoningWorkflow(): AgentWorkflowCreatePayload {
+  return {
+    name: "纯 ReAct 节点推理 Workflow",
+    description:
+      "演示 ReAct 在单个 Workflow 节点内部循环思考并产出 final：第一个节点负责 ReAct 多轮推理，第二个节点验收 ReAct 输出，第三个节点整理成对话可返回的总结结果。当前版本不接 MCP 工具。",
+    workflowType: "pure_react_reasoning_chat",
+    harnessType: "FLOW",
+    status: "ENABLED",
+    config: {
+      flowScenario: "纯 ReAct 节点推理",
+      flowGoal: "验证 ReAct 在单个节点内循环思考、收敛 final、再由 Workflow 后续节点评估与总结",
+      memoryEnabled: true,
+      memoryStrategyType: "LAYERED",
+      memorySummaryInterval: 1
+    },
+    inputSchema: {
+      type: "object",
+      properties: {
+        question: { type: "string" },
+        content: { type: "string" },
+        ticketId: { type: "string" },
+        accountId: { type: "string" },
+        orderId: { type: "string" }
+      }
+    },
+    outputSchema: { type: "object" },
+    nodes: [
+      {
+        nodeKey: "reactReasoning",
+        nodeName: "ReAct 循环推理",
+        nodeType: "ACTION",
+        actionType: "NOOP",
+        nodeOrder: 1,
+        config: {
+          strategyType: "REACT",
+          maxIterations: 4,
+          temperature: 0.2,
+          maxTokens: 900,
+          taskPrompt:
+            "你需要在不调用外部工具的前提下，针对用户问题进行 ReAct 循环推理。至少先输出一次 action 类型作为内部思考步骤，tool 使用 internalThinking，parameters 包含 observation；随后基于观察输出 final。final 的 answer 必须是 JSON 对象，并包含 rootCause、currentState、suggestion、customerReply、riskLevel 字段。",
+          allowedTools: [
+            {
+              name: "internalThinking",
+              description: "不访问外部系统，只把 parameters 原样记录为一次内部观察，用于演示 ReAct action/observation 循环。",
+              actionType: "NOOP",
+              config: {},
+              parameters: {
+                observation: "本轮内部观察或阶段性结论"
+              }
+            }
+          ]
+        }
+      },
+      {
+        nodeKey: "evaluateReActAnswer",
+        nodeName: "评估 ReAct 结果",
+        nodeType: "EVALUATOR",
+        nodeOrder: 2,
+        config: {
+          evaluatorType: "RULE",
+          targetNodeKey: "reactReasoning",
+          requiredFields: ["strategyType", "answer", "steps"],
+          minLength: 20,
+          maxReflectionRounds: 0,
+          retryNodeKey: "reactReasoning"
+        }
+      },
+      {
+        nodeKey: "reactSummary",
+        nodeName: "总结 ReAct 返回",
+        nodeType: "ACTION",
+        actionType: "REACT_ANSWER_SUMMARY",
+        nodeOrder: 3,
+        config: {
+          sourceNodeKey: "reactReasoning"
+        }
+      },
+      { nodeKey: "end", nodeName: "结束", nodeType: "END", nodeOrder: 4, config: {} }
+    ],
+    edges: [
+      {
+        sourceNodeKey: "reactReasoning",
+        targetNodeKey: "evaluateReActAnswer",
+        edgeType: "DEFAULT",
+        priority: 1
+      },
+      {
+        sourceNodeKey: "evaluateReActAnswer",
+        targetNodeKey: "reactSummary",
+        edgeType: "DEFAULT",
+        priority: 1
+      },
+      {
+        sourceNodeKey: "reactSummary",
+        targetNodeKey: "end",
+        edgeType: "DEFAULT",
+        priority: 1
+      }
+    ]
+  };
+}
+
 export function buildLayeredMemoryDemoWorkflow(): AgentWorkflowCreatePayload {
   return {
     name: `Workflow 任务级记忆演示 ${new Date().toLocaleTimeString("zh-CN", { hour12: false })}`,
