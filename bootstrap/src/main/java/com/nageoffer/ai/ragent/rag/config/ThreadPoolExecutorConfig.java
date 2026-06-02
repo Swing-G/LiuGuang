@@ -229,4 +229,23 @@ public class ThreadPoolExecutorConfig {
         );
         return TtlExecutors.getTtlExecutor(executor);
     }
+
+    /**
+     * Agent Team并行执行线程池
+     */
+    @Bean
+    public Executor agentTeamExecutor() {
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(
+                CPU_COUNT,
+                CPU_COUNT << 1,
+                60,
+                TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(200),
+                ThreadFactoryBuilder.create()
+                        .setNamePrefix("agent_team_executor_")
+                        .build(),
+                new ThreadPoolExecutor.CallerRunsPolicy()
+        );
+        return TtlExecutors.getTtlExecutor(executor);
+    }
 }

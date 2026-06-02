@@ -24,6 +24,8 @@ import { WorkflowChatBindingPage } from "@/pages/admin/workflows/WorkflowChatBin
 import { WorkflowManagePage } from "@/pages/admin/workflows/WorkflowManagePage";
 import { WorkflowPlaygroundPage } from "@/pages/admin/workflows/WorkflowPlaygroundPage";
 import { WorkflowRunPage } from "@/pages/admin/workflows/WorkflowRunPage";
+import { AgentTeamManagePage } from "@/pages/admin/workflows/AgentTeamManagePage";
+import { WorkflowBuilderPage } from "@/pages/admin/workflows/WorkflowBuilderPage";
 import { useAuthStore } from "@/stores/authStore";
 
 function RequireAuth({ children }: { children: JSX.Element }) {
@@ -148,6 +150,10 @@ export const router = createBrowserRouter([
         element: <RagTracePage />
       },
       {
+        path: "workflows/builder",
+        element: <WorkflowBuilderPage />
+      },
+      {
         path: "workflows",
         element: <WorkflowManagePage />
       },
@@ -162,6 +168,10 @@ export const router = createBrowserRouter([
       {
         path: "workflows/chat-bindings",
         element: <WorkflowChatBindingPage />
+      },
+      {
+        path: "agent-teams",
+        element: <AgentTeamManagePage />
       },
       {
         path: "traces/:traceId",

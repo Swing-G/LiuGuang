@@ -15,16 +15,28 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.agent.workflow.enums;
+package com.nageoffer.ai.ragent.agent.multiagent.topology;
+
+import com.nageoffer.ai.ragent.agent.multiagent.domain.AgentExecutionResult;
 
 /**
- * Workflow节点内部执行策略类型
+ * Agent Team拓扑策略接口
+ * <p>
+ * 每种拓扑定义了Agent如何协作执行。
+ * 实现类通过Spring Bean自动注册到{@link TeamTopologyStrategyRegistry}。
  */
-public enum NodeExecutionStrategyType {
-    PIPELINE,
-    REACT,
-    PLAN_EXECUTE,
-    TOOL,
-    RAG,
-    AGENT_TEAM
+public interface TeamTopologyStrategy {
+
+    /**
+     * 拓扑类型
+     */
+    String topologyType();
+
+    /**
+     * 执行拓扑策略
+     *
+     * @param context 拓扑执行上下文
+     * @return 合并后的执行结果
+     */
+    AgentExecutionResult execute(TeamTopologyContext context);
 }

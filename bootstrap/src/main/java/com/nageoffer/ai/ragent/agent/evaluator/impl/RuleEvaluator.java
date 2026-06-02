@@ -52,7 +52,7 @@ public class RuleEvaluator implements AgentEvaluator {
             for (JsonNode fieldNode : config.get("requiredFields")) {
                 String field = fieldNode.asText();
                 JsonNode value = target.path(field);
-                if (value.isMissingNode() || value.isNull() || value.asText("").isBlank()) {
+                if (value.isMissingNode() || value.isNull() || isEmptyValue(value)) {
                     reasons.add("缺少必填字段: " + field);
                 }
             }
@@ -73,6 +73,22 @@ public class RuleEvaluator implements AgentEvaluator {
                 .suggestion(passed ? "" : "请补齐必填字段并增加处理方案的完整性")
                 .details(details)
                 .build();
+    }
+
+    /**
+     * 判断字段值是否为空（兼容数组、对象、文本等类型）
+     */
+    private boolean isEmptyValue(JsonNode value) {
+        if (value.isTextual()) {
+            return value.asText("").isBlank();
+        }
+        if (value.isArray()) {
+            return value.size() == 0;
+        }
+        if (value.isObject()) {
+            return value.isEmpty();
+        }
+        return false;
     }
 
     private JsonNode resolveTarget(EvaluationContext context) {

@@ -20,6 +20,7 @@ import {
   Settings,
   Upload,
   Users,
+  FileJson2,
   FolderKanban,
   Workflow
 } from "lucide-react";
@@ -135,9 +136,14 @@ const menuGroups: MenuGroup[] = [
         icon: GitBranch,
         children: [
           {
-            path: "/admin/workflows",
-            label: "添加与展示",
+            path: "/admin/workflows/builder",
+            label: "可视化构建",
             icon: GitBranch
+          },
+          {
+            path: "/admin/agent-teams",
+            label: "Agent Team",
+            icon: Users
           },
           {
             path: "/admin/workflows/run",
@@ -145,13 +151,18 @@ const menuGroups: MenuGroup[] = [
             icon: Workflow
           },
           {
+            path: "/admin/workflows",
+            label: "JSON 模式",
+            icon: FileJson2
+          },
+          {
             path: "/admin/workflows/chat-bindings",
-            label: "对话选项绑定",
+            label: "对话绑定",
             icon: MessageSquare
           },
           {
             path: "/admin/workflows/playground",
-            label: "原调试台",
+            label: "调试台（旧）",
             icon: ClipboardList
           }
         ]
@@ -188,6 +199,7 @@ const breadcrumbMap: Record<string, string> = {
   ingestion: "数据通道",
   traces: "链路追踪",
   workflows: "Workflow 管理",
+  "agent-teams": "Agent Team",
   "sample-questions": "示例问题",
   mappings: "关键词映射",
   settings: "系统设置",

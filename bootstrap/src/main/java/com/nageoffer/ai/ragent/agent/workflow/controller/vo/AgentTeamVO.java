@@ -15,16 +15,36 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.agent.workflow.enums;
+package com.nageoffer.ai.ragent.agent.workflow.controller.vo;
+
+import lombok.Data;
+
+import java.util.Date;
+import java.util.List;
 
 /**
- * Workflow节点内部执行策略类型
+ * Agent Team VO
  */
-public enum NodeExecutionStrategyType {
-    PIPELINE,
-    REACT,
-    PLAN_EXECUTE,
-    TOOL,
-    RAG,
-    AGENT_TEAM
+@Data
+public class AgentTeamVO {
+
+    private String id;
+
+    private String name;
+
+    private String description;
+
+    private String topology;
+
+    private Integer maxRounds;
+
+    private String mergeStrategy;
+
+    private Object config;
+
+    private Date createTime;
+
+    private Date updateTime;
+
+    private List<AgentDefinitionVO> agents;
 }

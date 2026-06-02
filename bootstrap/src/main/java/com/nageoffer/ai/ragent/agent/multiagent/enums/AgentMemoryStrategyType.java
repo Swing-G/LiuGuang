@@ -15,16 +15,25 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.agent.workflow.enums;
+package com.nageoffer.ai.ragent.agent.multiagent.enums;
 
 /**
- * Workflow节点内部执行策略类型
+ * Agent记忆策略类型
  */
-public enum NodeExecutionStrategyType {
-    PIPELINE,
-    REACT,
-    PLAN_EXECUTE,
-    TOOL,
-    RAG,
-    AGENT_TEAM
+public enum AgentMemoryStrategyType {
+
+    /**
+     * 对话记忆：保留完整对话历史
+     */
+    CONVERSATION,
+
+    /**
+     * 摘要记忆：对历史对话进行摘要压缩
+     */
+    SUMMARIZE,
+
+    /**
+     * 无记忆：每次调用独立，不保留历史
+     */
+    NONE
 }

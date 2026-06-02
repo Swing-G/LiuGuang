@@ -15,16 +15,20 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.agent.workflow.enums;
+package com.nageoffer.ai.ragent.agent.multiagent.dao.mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.nageoffer.ai.ragent.agent.multiagent.dao.entity.AgentDefinitionDO;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
 
 /**
- * Workflow节点内部执行策略类型
+ * Agent定义Mapper
  */
-public enum NodeExecutionStrategyType {
-    PIPELINE,
-    REACT,
-    PLAN_EXECUTE,
-    TOOL,
-    RAG,
-    AGENT_TEAM
+public interface AgentDefinitionMapper extends BaseMapper<AgentDefinitionDO> {
+
+    @Select("SELECT * FROM t_agent_definition WHERE team_id = #{teamId} AND deleted = 0 ORDER BY agent_order ASC")
+    List<AgentDefinitionDO> selectByTeamId(@Param("teamId") String teamId);
 }

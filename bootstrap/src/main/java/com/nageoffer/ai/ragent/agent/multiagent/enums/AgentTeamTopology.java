@@ -15,16 +15,30 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.agent.workflow.enums;
+package com.nageoffer.ai.ragent.agent.multiagent.enums;
 
 /**
- * Workflow节点内部执行策略类型
+ * Agent Team协作拓扑类型
  */
-public enum NodeExecutionStrategyType {
-    PIPELINE,
-    REACT,
-    PLAN_EXECUTE,
-    TOOL,
-    RAG,
-    AGENT_TEAM
+public enum AgentTeamTopology {
+
+    /**
+     * 并行：所有Agent并发执行，各自独立分析，结果合并
+     */
+    PARALLEL,
+
+    /**
+     * 顺序：Agent按顺序执行，后者看到前者输出
+     */
+    SEQUENTIAL,
+
+    /**
+     * 辩论：多轮辩论，Agent互相看到对方结论，通过Moderator判断收敛
+     */
+    DEBATE,
+
+    /**
+     * 层级：Leader Agent拆解任务，分派给Worker执行，最终合成
+     */
+    HIERARCHICAL
 }

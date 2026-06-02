@@ -15,16 +15,13 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.agent.workflow.enums;
+package com.nageoffer.ai.ragent.agent.multiagent.dao.mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.nageoffer.ai.ragent.agent.multiagent.dao.entity.AgentTeamDefinitionDO;
 
 /**
- * Workflow节点内部执行策略类型
+ * Agent Team定义Mapper
  */
-public enum NodeExecutionStrategyType {
-    PIPELINE,
-    REACT,
-    PLAN_EXECUTE,
-    TOOL,
-    RAG,
-    AGENT_TEAM
+public interface AgentTeamDefinitionMapper extends BaseMapper<AgentTeamDefinitionDO> {
 }

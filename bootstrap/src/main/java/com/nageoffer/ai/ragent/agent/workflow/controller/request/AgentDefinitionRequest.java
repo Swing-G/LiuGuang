@@ -15,16 +15,41 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.agent.workflow.enums;
+package com.nageoffer.ai.ragent.agent.workflow.controller.request;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+
+import java.util.List;
 
 /**
- * Workflow节点内部执行策略类型
+ * Agent定义请求
  */
-public enum NodeExecutionStrategyType {
-    PIPELINE,
-    REACT,
-    PLAN_EXECUTE,
-    TOOL,
-    RAG,
-    AGENT_TEAM
+@Data
+public class AgentDefinitionRequest {
+
+    @NotBlank(message = "Agent Key不能为空")
+    private String agentKey;
+
+    @NotBlank(message = "Agent名称不能为空")
+    private String agentName;
+
+    @NotBlank(message = "角色描述不能为空")
+    private String role;
+
+    private String goal;
+
+    private String modelId;
+
+    private List<String> toolNames;
+
+    private Object llmConfig;
+
+    private Integer agentOrder;
+
+    private Boolean isLeader;
+
+    private String memoryStrategy;
+
+    private Object config;
 }

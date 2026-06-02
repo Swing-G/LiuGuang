@@ -23,5 +23,6 @@ package com.nageoffer.ai.ragent.agent.workflow.enums;
 public enum HarnessType {
     FLOW,
     REACT,
-    PAE
+    PAE,
+    MULTI_AGENT
 }

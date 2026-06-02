@@ -41,6 +41,7 @@ import {
   type AgentWorkflowNode,
   type PageResult
 } from "@/services/workflowService";
+import { buildMultiAgentParallelWorkflow } from "@/services/multiAgentService";
 import { getErrorMessage } from "@/utils/error";
 
 const DEFAULT_INPUT = JSON.stringify(
@@ -237,7 +238,7 @@ export function WorkflowPlaygroundPage() {
     }
   }
 
-  async function createWf(type: "ticket" | "quick" | "followup" | "react" | "pureReact" | "planExecute" | "demo") {
+  async function createWf(type: "ticket" | "quick" | "followup" | "react" | "pureReact" | "planExecute" | "demo" | "multiAgent") {
     const template =
       type === "ticket"
         ? buildTicketTriageWorkflow()
@@ -251,7 +252,9 @@ export function WorkflowPlaygroundPage() {
                 ? buildPureReActReasoningWorkflow()
                 : type === "planExecute"
                   ? buildPlanExecuteReasoningWorkflow()
-                  : buildLayeredMemoryDemoWorkflow();
+                  : type === "multiAgent"
+                    ? buildMultiAgentParallelWorkflow("REPLACE_WITH_TEAM_ID")
+                    : buildLayeredMemoryDemoWorkflow();
     setEditor(payloadToEditor(template));
     setEditorMode("create");
     setWorkflowDetail(null);
@@ -414,6 +417,14 @@ export function WorkflowPlaygroundPage() {
               onClick={() => createWf("planExecute")}
             >
               Plan-and-Execute
+            </Button>
+            <Button
+              variant="outline"
+              className="border-white/20 bg-white/10 text-white hover:bg-white/15"
+              disabled={busy}
+              onClick={() => createWf("multiAgent")}
+            >
+              多Agent并行
             </Button>
             <Button
               variant="outline"

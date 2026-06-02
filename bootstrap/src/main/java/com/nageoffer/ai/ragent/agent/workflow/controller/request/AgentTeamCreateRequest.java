@@ -15,16 +15,35 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.agent.workflow.enums;
+package com.nageoffer.ai.ragent.agent.workflow.controller.request;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+
+import java.util.List;
 
 /**
- * Workflow节点内部执行策略类型
+ * Agent Team创建请求
  */
-public enum NodeExecutionStrategyType {
-    PIPELINE,
-    REACT,
-    PLAN_EXECUTE,
-    TOOL,
-    RAG,
-    AGENT_TEAM
+@Data
+public class AgentTeamCreateRequest {
+
+    @NotBlank(message = "Team名称不能为空")
+    private String name;
+
+    private String description;
+
+    @NotBlank(message = "拓扑不能为空")
+    private String topology;
+
+    @NotNull(message = "最大轮数不能为空")
+    private Integer maxRounds;
+
+    @NotBlank(message = "合并策略不能为空")
+    private String mergeStrategy;
+
+    private Object config;
+
+    private List<AgentDefinitionRequest> agents;
 }

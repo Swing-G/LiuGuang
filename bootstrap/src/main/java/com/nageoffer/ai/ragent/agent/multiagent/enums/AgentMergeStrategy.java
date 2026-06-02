@@ -15,16 +15,30 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.agent.workflow.enums;
+package com.nageoffer.ai.ragent.agent.multiagent.enums;
 
 /**
- * Workflow节点内部执行策略类型
+ * Agent Team结果合并策略
  */
-public enum NodeExecutionStrategyType {
-    PIPELINE,
-    REACT,
-    PLAN_EXECUTE,
-    TOOL,
-    RAG,
-    AGENT_TEAM
+public enum AgentMergeStrategy {
+
+    /**
+     * 共识：所有Agent必须达成一致
+     */
+    CONSENSUS,
+
+    /**
+     * 多数：少数服从多数
+     */
+    MAJORITY,
+
+    /**
+     * Leader决策：由Leader Agent的合成结果为准
+     */
+    LEADER,
+
+    /**
+     * 优先：第一个成功的Agent输出即为最终结果
+     */
+    FIRST
 }

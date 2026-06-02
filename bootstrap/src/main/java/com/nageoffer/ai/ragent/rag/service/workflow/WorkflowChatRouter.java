@@ -119,7 +119,8 @@ public class WorkflowChatRouter {
         boolean quickTriageFlow = TICKET_QUICK_TRIAGE_WORKFLOW_TYPE.equals(workflow.getWorkflowType());
         boolean pureReActFlow = "pure_react_reasoning_chat".equals(workflow.getWorkflowType());
         boolean planExecuteFlow = "plan_execute_reasoning_chat".equals(workflow.getWorkflowType());
-        if (!identifiers.hasAnyLookupKey() && !quickTriageFlow && !pureReActFlow && !planExecuteFlow) {
+        boolean multiAgentFlow = "multi_agent_chat".equals(workflow.getWorkflowType());
+        if (!identifiers.hasAnyLookupKey() && !quickTriageFlow && !pureReActFlow && !planExecuteFlow && !multiAgentFlow) {
             completeWithAssistantMessage(conversationId, userId, callback, buildMissingInfoReply());
             return true;
         }
@@ -130,7 +131,12 @@ public class WorkflowChatRouter {
             request.setBusinessId("chat-ticket-" + IdUtil.getSnowflakeNextIdStr());
             request.setInput(input);
             AgentWorkflowInstanceVO instance = workflowService.run(workflow.getId(), request);
-            String reply = toNaturalLanguage(question, instance, previousRun);
+            String reply;
+            if (multiAgentFlow) {
+                reply = extractMultiAgentReply(instance);
+            } else {
+                reply = toNaturalLanguage(question, instance, previousRun);
+            }
             conversationWorkflowRunService.record(conversationId, userId, workflow, instance, input, buildEntities(identifiers), buildWorkflowRunSummary(instance, reply));
             completeWithAssistantMessage(conversationId, userId, callback, reply);
             return true;
@@ -481,6 +487,33 @@ public class WorkflowChatRouter {
 
     private String defaultText(String value) {
         return StringUtils.hasText(value) ? value : "-";
+    }
+
+    private String extractMultiAgentReply(AgentWorkflowInstanceVO instance) {
+        // 数据在 workflow context 里，output 字段可能是 null
+        JsonNode context = instance.getContext();
+        if (context != null && context.isObject()) {
+            // 遍历 context 找到含 teamResult 的节点输出
+            var fields = context.fields();
+            while (fields.hasNext()) {
+                var entry = fields.next();
+                if ("input".equals(entry.getKey()) || "variables".equals(entry.getKey())) {
+                    continue;
+                }
+                JsonNode value = entry.getValue();
+                if (value != null && value.isObject()) {
+                    String teamResult = value.path("teamResult").asText(null);
+                    if (teamResult != null && !teamResult.isBlank()) {
+                        return teamResult;
+                    }
+                    String aggregated = value.path("aggregatedSummary").asText(null);
+                    if (aggregated != null && !aggregated.isBlank()) {
+                        return aggregated;
+                    }
+                }
+            }
+        }
+        return "多Agent分析完成，请查看详细结果。";
     }
 
     private String buildMissingInfoReply() {
