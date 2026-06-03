@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS t_agent_team_definition (
     description     VARCHAR(512),
     topology        VARCHAR(32)  NOT NULL DEFAULT 'PARALLEL',
     max_rounds      INTEGER      NOT NULL DEFAULT 3,
-    merge_strategy  VARCHAR(32)  NOT NULL DEFAULT 'CONSENSUS',
+    merge_strategy  VARCHAR(32)  NOT NULL DEFAULT 'SYNTHESIS',
     config_json     JSONB,
     create_time     TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     update_time     TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS t_agent_team_definition (
 CREATE INDEX IF NOT EXISTS idx_agent_team_name ON t_agent_team_definition (name);
 COMMENT ON TABLE t_agent_team_definition IS 'Agent Team定义表';
 COMMENT ON COLUMN t_agent_team_definition.topology IS '协作拓扑：PARALLEL、SEQUENTIAL、DEBATE、HIERARCHICAL';
-COMMENT ON COLUMN t_agent_team_definition.merge_strategy IS '结果合并策略：CONSENSUS、MAJORITY、LEADER、FIRST';
+COMMENT ON COLUMN t_agent_team_definition.merge_strategy IS '结果合并策略：SYNTHESIS(PARALLEL)、CONSENSUS/MAJORITY(DEBATE)、LEADER(HIERARCHICAL)、FIRST(PARALLEL)';
 COMMENT ON COLUMN t_agent_team_definition.config_json IS '全局Team配置（temperature, timeout等）';
 
 CREATE TABLE IF NOT EXISTS t_agent_definition (

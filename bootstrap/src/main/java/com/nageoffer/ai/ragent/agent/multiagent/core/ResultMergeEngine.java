@@ -65,11 +65,12 @@ public class ResultMergeEngine {
         }
 
         return switch (strategy) {
+            case SYNTHESIS -> mergeBySynthesis(successful);
             case FIRST -> mergeFirst(successful);
             case CONSENSUS -> mergeByConsensus(successful);
             case MAJORITY -> mergeByMajority(successful);
             case LEADER -> mergeByLeader(successful);
-            default -> mergeFirst(successful);
+            default -> mergeBySynthesis(successful);
         };
     }
 
@@ -78,6 +79,34 @@ public class ResultMergeEngine {
      */
     private AgentExecutionResult mergeFirst(List<AgentExecutionResult> results) {
         return results.get(0);
+    }
+
+    /**
+     * SYNTHESIS: 使用LLM将多个Agent的分析综合为一份完整报告（适用于PARALLEL）
+     */
+    private AgentExecutionResult mergeBySynthesis(List<AgentExecutionResult> results) {
+        StringBuilder allOutputs = new StringBuilder();
+        for (int i = 0; i < results.size(); i++) {
+            allOutputs.append("Agent ").append(i + 1).append(" (")
+                    .append(results.get(i).getAgentKey()).append(") 分析:\n")
+                    .append(results.get(i).getOutput()).append("\n\n");
+        }
+
+        String prompt = "以下是对同一问题的多个专家独立分析结果。请综合所有观点，"
+                + "找出一致结论、互补观点和分歧点，整合为一份结构化的综合分析报告：\n\n" + allOutputs;
+
+        try {
+            String synthesis = llmService.chat(prompt);
+            return AgentExecutionResult.builder()
+                    .agentKey("SYNTHESIS")
+                    .success(true)
+                    .status("SUCCESS")
+                    .output(synthesis)
+                    .build();
+        } catch (Exception e) {
+            log.warn("综合合并失败，回退到FIRST策略", e);
+            return mergeFirst(results);
+        }
     }
 
     /**

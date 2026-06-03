@@ -23,22 +23,27 @@ package com.nageoffer.ai.ragent.agent.multiagent.enums;
 public enum AgentMergeStrategy {
 
     /**
-     * 共识：所有Agent必须达成一致
+     * 综合：LLM将所有Agent的分析合并为一个综合报告（适用于PARALLEL）
+     */
+    SYNTHESIS,
+
+    /**
+     * 共识：多轮辩论直到所有Agent达成一致（适用于DEBATE）
      */
     CONSENSUS,
 
     /**
-     * 多数：少数服从多数
+     * 多数：少数服从多数（适用于DEBATE）
      */
     MAJORITY,
 
     /**
-     * Leader决策：由Leader Agent的合成结果为准
+     * Leader决策：由Leader Agent的合成结果为准（适用于HIERARCHICAL）
      */
     LEADER,
 
     /**
-     * 优先：第一个成功的Agent输出即为最终结果
+     * 优先：第一个成功的Agent输出即为最终结果（适用于PARALLEL）
      */
     FIRST
 }

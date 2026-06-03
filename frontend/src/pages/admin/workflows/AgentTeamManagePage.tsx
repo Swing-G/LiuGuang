@@ -21,6 +21,8 @@ import {
   getAvailableTools,
   TOPOLOGY_OPTIONS,
   MERGE_STRATEGY_OPTIONS,
+  TOPOLOGY_MERGE_MAP,
+  TOPOLOGY_DEFAULT_MERGE,
   type AgentTeam,
   type AgentTeamCreatePayload,
   type AgentDefinition,
@@ -49,7 +51,7 @@ export function AgentTeamManagePage() {
   const [teamDesc, setTeamDesc] = useState("");
   const [topology, setTopology] = useState("PARALLEL");
   const [maxRounds, setMaxRounds] = useState(3);
-  const [mergeStrategy, setMergeStrategy] = useState("CONSENSUS");
+  const [mergeStrategy, setMergeStrategy] = useState("SYNTHESIS");
 
   const loadTeams = useCallback(async (pageNo = 1) => {
     setBusy(true);
@@ -217,14 +219,17 @@ export function AgentTeamManagePage() {
                 <div><Label>描述</Label><Input value={teamDesc} onChange={e => setTeamDesc(e.target.value)} placeholder="Team用途描述" /></div>
                 <div>
                   <Label>协作拓扑</Label>
-                  <select className="w-full mt-1.5 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm" value={topology} onChange={e => setTopology(e.target.value)}>
+                  <select className="w-full mt-1.5 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm" value={topology} onChange={e => { setTopology(e.target.value); setMergeStrategy(TOPOLOGY_DEFAULT_MERGE[e.target.value] || ""); }}>
                     {TOPOLOGY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 </div>
                 <div>
                   <Label>合并策略</Label>
                   <select className="w-full mt-1.5 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm" value={mergeStrategy} onChange={e => setMergeStrategy(e.target.value)}>
-                    {MERGE_STRATEGY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    {(TOPOLOGY_MERGE_MAP[topology] || []).map(v => {
+                      const opt = MERGE_STRATEGY_OPTIONS.find(o => o.value === v);
+                      return <option key={v} value={v}>{opt?.label || v}</option>;
+                    })}
                   </select>
                 </div>
                 <div><Label>最大轮数</Label><Input type="number" min={1} max={10} value={maxRounds} onChange={e => setMaxRounds(Number(e.target.value))} /></div>

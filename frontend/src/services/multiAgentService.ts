@@ -93,11 +93,28 @@ export const TOPOLOGY_OPTIONS = [
 ] as const;
 
 export const MERGE_STRATEGY_OPTIONS = [
-  { value: "CONSENSUS", label: "共识 - 所有Agent一致" },
-  { value: "MAJORITY", label: "多数 - 少数服从多数" },
-  { value: "LEADER", label: "Leader决策" },
-  { value: "FIRST", label: "优先 - 第一个结果" }
+  { value: "SYNTHESIS", label: "综合合并 (SYNTHESIS)" },
+  { value: "FIRST", label: "最快返回 (FIRST)" },
+  { value: "CONSENSUS", label: "共识一致 (CONSENSUS)" },
+  { value: "MAJORITY", label: "多数投票 (MAJORITY)" },
+  { value: "LEADER", label: "Leader决策 (LEADER)" }
 ] as const;
+
+/** 每种拓扑对应的有效合并策略 */
+export const TOPOLOGY_MERGE_MAP: Record<string, string[]> = {
+  PARALLEL: ["SYNTHESIS", "FIRST"],
+  SEQUENTIAL: [],
+  DEBATE: ["CONSENSUS", "MAJORITY"],
+  HIERARCHICAL: ["LEADER"]
+};
+
+/** 每种拓扑的默认合并策略 */
+export const TOPOLOGY_DEFAULT_MERGE: Record<string, string> = {
+  PARALLEL: "SYNTHESIS",
+  SEQUENTIAL: "",
+  DEBATE: "CONSENSUS",
+  HIERARCHICAL: "LEADER"
+};
 
 export function buildMultiAgentParallelWorkflow(teamId: string): import("@/services/workflowService").AgentWorkflowCreatePayload {
   return {
