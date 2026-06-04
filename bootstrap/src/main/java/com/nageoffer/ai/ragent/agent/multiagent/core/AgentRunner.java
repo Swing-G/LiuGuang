@@ -57,7 +57,7 @@ public class AgentRunner {
     private final LLMService llmService;
     private final McpToolRegistry mcpToolRegistry;
     private final AgentMemoryService agentMemoryService;
-    private final com.nageoffer.ai.ragent.agent.workflow.strategy.NodeExecutionStrategyRegistry strategyRegistry;
+    private final org.springframework.context.ApplicationContext applicationContext;
     private final ObjectMapper objectMapper;
 
     /**
@@ -75,9 +75,11 @@ public class AgentRunner {
             com.nageoffer.ai.ragent.agent.workflow.strategy.NodeExecutionContext nodeCtx =
                     buildNodeContext(context);
 
-            // 2. 调用策略执行
+            // 2. 从 ApplicationContext 延迟获取策略（避免循环依赖）
+            com.nageoffer.ai.ragent.agent.workflow.strategy.NodeExecutionStrategyRegistry registry =
+                    applicationContext.getBean(com.nageoffer.ai.ragent.agent.workflow.strategy.NodeExecutionStrategyRegistry.class);
             com.nageoffer.ai.ragent.agent.workflow.strategy.NodeExecutionStrategy strategy =
-                    strategyRegistry.getRequired(strategyType);
+                    registry.getRequired(strategyType);
             com.nageoffer.ai.ragent.agent.action.domain.ActionResult actionResult =
                     strategy.execute(nodeCtx);
 
