@@ -66,6 +66,7 @@ public class WorkflowChatRouter {
     private final ObjectMapper objectMapper;
     private final LLMService llmService;
     private final com.nageoffer.ai.ragent.agent.skill.core.AgentSkillService skillService;
+    private final com.nageoffer.ai.ragent.agent.skill.core.SkillEvolutionEvaluator skillEvolutionEvaluator;
 
     public boolean handle(String question, String conversationId, String userId, String workflowType,
                           StreamCallback callback) {
@@ -125,11 +126,13 @@ public class WorkflowChatRouter {
             return true;
         }
         try {
-            // 匹配 Skill（异步，失败不影响主流程）
+            // 匹配 Skill
             String matchedSkillContent = null;
+            String matchedSkillKey = null;
             try {
                 com.nageoffer.ai.ragent.agent.skill.dao.entity.AgentSkillDO skill = skillService.matchSkill(question);
                 if (skill != null) {
+                    matchedSkillKey = skill.getSkillKey();
                     matchedSkillContent = "## 业务SOP\n" + (skill.getSopContent() != null ? skill.getSopContent() : "")
                             + "\n\n## 领域规则\n" + (skill.getDomainRules() != null ? skill.getDomainRules() : "")
                             + "\n\n## 提示词模板\n" + (skill.getPromptTemplate() != null ? skill.getPromptTemplate() : "");
@@ -139,6 +142,7 @@ public class WorkflowChatRouter {
                 log.warn("Skill 匹配异常，跳过", e);
             }
             ObjectNode input = buildInput(question, userId, identifiers, previousRun);
+            final String finalSkillKey = matchedSkillKey;
             if (matchedSkillContent != null) {
                 input.put("skillContext", matchedSkillContent);
             }
@@ -147,6 +151,15 @@ public class WorkflowChatRouter {
             request.setBusinessId("chat-ticket-" + IdUtil.getSnowflakeNextIdStr());
             request.setInput(input);
             AgentWorkflowInstanceVO instance = workflowService.run(workflow.getId(), request);
+            // 异步触发 Skill 进化检查
+            if (finalSkillKey != null) {
+                try {
+                    skillEvolutionEvaluator.evaluateAsync(finalSkillKey, question,
+                            instance.getOutput() != null ? instance.getOutput().toString() : "", instance.getId());
+                } catch (Exception e) {
+                    log.warn("Skill 进化检查触发异常", e);
+                }
+            }
             // 先尝试标准 toNaturalLanguage，失败时回退到多Agent提取
             String reply = toNaturalLanguage(question, instance, previousRun);
             if (reply.contains("暂时无法完成") || reply.contains("没有拿到有效")) {
