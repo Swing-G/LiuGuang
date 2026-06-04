@@ -163,7 +163,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
           );
         }
       }}
-      className="prose prose-gray max-w-none dark:prose-invert prose-headings:font-semibold prose-headings:text-[#1A1A1A] dark:prose-headings:text-[#EEEEEE] prose-p:text-[#333333] dark:prose-p:text-[#CCCCCC] prose-p:leading-relaxed prose-li:text-[#333333] dark:prose-li:text-[#CCCCCC] prose-strong:text-[#1A1A1A] dark:prose-strong:text-[#EEEEEE]"
+      className="prose prose-gray max-w-none dark:prose-invert prose-headings:font-semibold prose-headings:text-[#1A1A1A] dark:prose-headings:text-[#EEEEEE] prose-p:text-[#333333] dark:prose-p:text-[#CCCCCC] prose-p:leading-relaxed prose-li:text-[#333333] dark:prose-li:text-[#CCCCCC] prose-strong:text-[#1A1A1A] dark:prose-strong:text-[#EEEEEE] prose-blockquote:border-l-[#C0C5CE] prose-blockquote:bg-[#F5F6F8] prose-blockquote:text-[#555555] dark:prose-blockquote:border-l-[#444444] dark:prose-blockquote:bg-[#1A1A1E] dark:prose-blockquote:text-[#AAAAAA] prose-blockquote:rounded-r-lg prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:not-italic"
     >
       {content}
     </ReactMarkdown>

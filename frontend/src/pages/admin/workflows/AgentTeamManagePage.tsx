@@ -31,7 +31,7 @@ import {
 import { getErrorMessage } from "@/utils/error";
 
 const emptyPage: PageResult<AgentTeam> = { records: [], total: 0, size: 10, current: 1, pages: 0 };
-const emptyAgent: AgentDefinition = { agentKey: "", agentName: "", role: "", toolNames: [], agentOrder: 0, isLeader: false, memoryStrategy: "CONVERSATION" };
+const emptyAgent: AgentDefinition = { agentKey: "", agentName: "", role: "", toolNames: [], agentOrder: 0, isLeader: false, memoryStrategy: "CONVERSATION", llmConfig: { strategyType: "REACT" } };
 
 export function AgentTeamManagePage() {
   const [keyword, setKeyword] = useState("");
@@ -316,6 +316,15 @@ export function AgentTeamManagePage() {
                       <option value="SUMMARIZE">摘要记忆</option>
                       <option value="NONE">无记忆</option>
                     </select>
+                  </div>
+                  <div>
+                    <Label>执行策略</Label>
+                    <select className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={((editingAgent.llmConfig as Record<string, unknown>)?.strategyType as string) || "REACT"}
+                      onChange={e => setEditingAgent({ ...editingAgent, llmConfig: { ...(editingAgent.llmConfig as Record<string, unknown> || {}), strategyType: e.target.value } })}>
+                      <option value="REACT">ReAct - 思考行动循环</option>
+                      <option value="PLAN_EXECUTE">Plan-Execute - 规划执行</option>
+                      <option value="PIPELINE">Pipeline - 直接调用</option>
                   </div>
                 </div>
                 <div>

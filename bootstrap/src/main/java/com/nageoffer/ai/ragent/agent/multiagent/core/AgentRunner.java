@@ -57,66 +57,43 @@ public class AgentRunner {
     private final LLMService llmService;
     private final McpToolRegistry mcpToolRegistry;
     private final AgentMemoryService agentMemoryService;
+    private final com.nageoffer.ai.ragent.agent.workflow.strategy.NodeExecutionStrategyRegistry strategyRegistry;
     private final ObjectMapper objectMapper;
-
-    private static final int MAX_TOOL_ITERATIONS = 5;
 
     /**
      * 执行单个Agent
+     * 根据 Agent 配置的 strategyType（默认 REACT）选择对应的 NodeExecutionStrategy
      */
     public AgentExecutionResult run(AgentExecutionContext context) {
         long startTime = System.currentTimeMillis();
         AgentConfig config = context.getAgentConfig();
-        log.info("AgentRunner启动: agentKey={}, role={}", config.getAgentKey(), config.getAgentName());
+        String strategyType = config.getStrategyType() != null ? config.getStrategyType() : "REACT";
+        log.info("AgentRunner启动: agentKey={}, strategy={}", config.getAgentKey(), strategyType);
 
         try {
-            // 1. 构建消息列表
-            List<ChatMessage> messages = buildMessages(config, context);
+            // 1. 构建 NodeExecutionContext（桥接 Agent 上下文到 Node 上下文）
+            com.nageoffer.ai.ragent.agent.workflow.strategy.NodeExecutionContext nodeCtx =
+                    buildNodeContext(context);
 
-            // 2. 执行ReAct循环
-            StringBuilder finalOutput = new StringBuilder();
-            List<JsonNode> toolResults = new ArrayList<>();
-            int totalTokens = 0;
+            // 2. 调用策略执行
+            com.nageoffer.ai.ragent.agent.workflow.strategy.NodeExecutionStrategy strategy =
+                    strategyRegistry.getRequired(strategyType);
+            com.nageoffer.ai.ragent.agent.action.domain.ActionResult actionResult =
+                    strategy.execute(nodeCtx);
 
-            for (int iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration++) {
-                ChatRequest request = buildChatRequest(config, messages);
-                String response = llmService.chat(request, config.getModelId());
-                totalTokens += estimateTokens(response);
+            // 3. 保存记忆
+            saveMemory(context, config, actionResult);
 
-                // 3. 尝试解析Tool Call
-                JsonNode toolCall = parseToolCall(response);
-                if (toolCall != null) {
-                    String toolName = toolCall.path("tool").asText();
-                    JsonNode params = toolCall.path("parameters");
-                    JsonNode toolResult = executeTool(toolName, params);
-                    toolResults.add(toolResult);
-
-                    messages.add(ChatMessage.assistant("调用工具 " + toolName + " 结果: " + toolResult));
-                    log.debug("Agent {} 调用工具: {}, 结果: {}", config.getAgentKey(), toolName, toolResult);
-                } else {
-                    // 无工具调用，视为最终输出
-                    finalOutput.append(response);
-                    break;
-                }
-            }
-
-            if (finalOutput.isEmpty()) {
-                finalOutput.append(messages.get(messages.size() - 1).getContent());
-            }
-
-            // 4. 保存记忆
-            saveMemory(context, config, messages, finalOutput.toString());
-
+            // 4. 转换为 AgentExecutionResult
             long duration = System.currentTimeMillis() - startTime;
-            AgentExecutionResult result = AgentExecutionResult.success(
-                    config.getAgentKey(),
-                    finalOutput.toString(),
-                    extractStructuredOutput(finalOutput.toString()),
-                    duration
-            );
-            result.setEstimatedTokens(totalTokens);
-            result.setToolResults(toolResults);
-            return result;
+            if (actionResult.isSuccess()) {
+                String output = actionResult.getOutput() != null ? actionResult.getOutput().toString() : "";
+                return AgentExecutionResult.success(config.getAgentKey(), output,
+                        actionResult.getOutput(), duration);
+            } else {
+                return AgentExecutionResult.fail(config.getAgentKey(),
+                        actionResult.getErrorMessage(), duration);
+            }
 
         } catch (Exception e) {
             log.error("AgentRunner执行失败: agentKey={}", config.getAgentKey(), e);
@@ -125,158 +102,85 @@ public class AgentRunner {
         }
     }
 
-    private List<ChatMessage> buildMessages(AgentConfig config, AgentExecutionContext context) {
-        List<ChatMessage> messages = new ArrayList<>();
+    private com.nageoffer.ai.ragent.agent.workflow.strategy.NodeExecutionContext buildNodeContext(
+            AgentExecutionContext context) {
+        AgentConfig config = context.getAgentConfig();
 
-        // System Prompt
-        StringBuilder systemPrompt = new StringBuilder();
-        systemPrompt.append(config.getRole()).append("\n\n");
-        systemPrompt.append("目标: ").append(config.getGoal()).append("\n\n");
-
-        // 可用工具描述（含MCP inputSchema，让LLM知道需要哪些参数）
+        // 构建 configJson：把 Agent 的配置映射为 Node 的 config
+        ObjectNode nodeConfig = objectMapper.createObjectNode();
+        nodeConfig.put("strategyType", config.getStrategyType() != null ? config.getStrategyType() : "REACT");
+        if (config.getTemperature() != null) nodeConfig.put("temperature", config.getTemperature());
+        if (config.getMaxTokens() != null) nodeConfig.put("maxTokens", config.getMaxTokens());
+        nodeConfig.put("thinking", config.getThinking() != null ? config.getThinking() : false);
+        if (config.getModelId() != null) nodeConfig.put("modelId", config.getModelId());
+        nodeConfig.put("taskPrompt", buildSystemPromptBody(config));
         if (config.getToolNames() != null && !config.getToolNames().isEmpty()) {
-            systemPrompt.append("可用工具:\n");
+            ArrayNode allowedTools = objectMapper.createArrayNode();
             for (String toolName : config.getToolNames()) {
-                Optional<McpToolExecutor> executor = mcpToolRegistry.getExecutor(toolName);
-                if (executor.isPresent()) {
-                    McpSchema.Tool tool = executor.get().getToolDefinition();
-                    systemPrompt.append("- ").append(tool.name()).append(": ").append(tool.description()).append("\n");
-                    if (tool.inputSchema() != null) {
+                ObjectNode toolNode = objectMapper.createObjectNode();
+                toolNode.put("name", toolName);
+                toolNode.put("actionType", "MCP_TOOL");
+                toolNode.set("parameters", objectMapper.createObjectNode());
+                allowedTools.add(toolNode);
+            }
+            nodeConfig.set("allowedTools", allowedTools);
+        }
+
+        // 构建输入
+        ObjectNode input = objectMapper.createObjectNode();
+        if (context.getOriginalInput() != null) {
+            input.set("originalInput", context.getOriginalInput());
+            // 注入 skillContext
+            if (context.getOriginalInput().has("skillContext")) {
+                input.set("skillContext", context.getOriginalInput().get("skillContext"));
+            }
+        }
+
+        // 构建假的 instance 和 node（策略只需要 id/workflowId/nodeKey）
+        com.nageoffer.ai.ragent.agent.workflow.dao.entity.AgentWorkflowInstanceDO fakeInstance =
+                new com.nageoffer.ai.ragent.agent.workflow.dao.entity.AgentWorkflowInstanceDO();
+        fakeInstance.setId(context.getInstanceId());
+        fakeInstance.setWorkflowId("agent_" + config.getAgentKey());
+        com.nageoffer.ai.ragent.agent.workflow.dao.entity.AgentWorkflowNodeDO fakeNode =
+                new com.nageoffer.ai.ragent.agent.workflow.dao.entity.AgentWorkflowNodeDO();
+        fakeNode.setNodeKey(config.getAgentKey());
+        fakeNode.setNodeName(config.getAgentName());
+
+        return com.nageoffer.ai.ragent.agent.workflow.strategy.NodeExecutionContext.builder()
+                .instance(fakeInstance)
+                .node(fakeNode)
+                .originalInput(input)
+                .nodeConfig(nodeConfig)
+                .build();
+    }
+
+    private String buildSystemPromptBody(AgentConfig config) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(config.getRole()).append("\n\n");
+        if (config.getGoal() != null) sb.append("目标: ").append(config.getGoal()).append("\n\n");
+        if (config.getToolNames() != null && !config.getToolNames().isEmpty()) {
+            sb.append("可用工具:\n");
+            for (String toolName : config.getToolNames()) {
+                var executor = mcpToolRegistry.getExecutor(toolName);
+                executor.ifPresent(e -> {
+                    sb.append("- ").append(e.getToolDefinition().name()).append(": ")
+                            .append(e.getToolDefinition().description()).append("\n");
+                    if (e.getToolDefinition().inputSchema() != null) {
                         try {
-                            String schemaStr = objectMapper.writeValueAsString(tool.inputSchema());
-                            systemPrompt.append("  参数Schema: ").append(schemaStr).append("\n");
-                        } catch (Exception ignored) {
-                        }
+                            sb.append("  参数Schema: ").append(objectMapper.writeValueAsString(
+                                    e.getToolDefinition().inputSchema())).append("\n");
+                        } catch (Exception ignored) {}
                     }
-                }
-            }
-            systemPrompt.append("\n如需调用工具，请输出JSON格式: {\"tool\": \"工具名\", \"parameters\": {...}}。");
-            systemPrompt.append("parameters中的参数值必须从任务输入的JSON中提取对应的字段值。\n");
-        }
-
-        // 注入 Skill 上下文（如果输入中有 skillContext 字段）
-        if (context.getOriginalInput() != null && context.getOriginalInput().has("skillContext")) {
-            String skillContext = context.getOriginalInput().path("skillContext").asText(null);
-            if (skillContext != null && !skillContext.isBlank()) {
-                systemPrompt.append("\n\n## 业务知识库（Skill）\n").append(skillContext).append("\n");
+                });
             }
         }
-        messages.add(ChatMessage.system(systemPrompt.toString()));
-
-        // 加载历史记忆
-        List<AgentMemoryDO> history = agentMemoryService.getHistoryWithTokenLimit(
-                context.getNodeInstanceId(), config.getAgentKey());
-        for (AgentMemoryDO mem : history) {
-            if ("USER".equals(mem.getRole())) {
-                messages.add(ChatMessage.user(mem.getContent()));
-            } else if ("ASSISTANT".equals(mem.getRole())) {
-                messages.add(ChatMessage.assistant(mem.getContent()));
-            } else if ("SYSTEM".equals(mem.getRole())) {
-                messages.add(ChatMessage.system(mem.getContent()));
-            }
-        }
-
-        // 当前任务
-        StringBuilder userMsg = new StringBuilder();
-        userMsg.append("任务输入:\n").append(context.getOriginalInput().toString());
-
-        // Blackboard上下文
-        if (context.getBlackboardContext() != null && !context.getBlackboardContext().isEmpty()) {
-            userMsg.append("\n\n其他Agent的分析结果（Blackboard）:\n")
-                    .append(context.getBlackboardContext().toString());
-        }
-
-        userMsg.append("\n\n请完成你的分析并给出结论。");
-        messages.add(ChatMessage.user(userMsg.toString()));
-
-        return messages;
-    }
-
-    private ChatRequest buildChatRequest(AgentConfig config, List<ChatMessage> messages) {
-        ChatRequest.ChatRequestBuilder builder = ChatRequest.builder().messages(messages);
-        if (config.getTemperature() != null) {
-            builder.temperature(config.getTemperature());
-        }
-        if (config.getMaxTokens() != null) {
-            builder.maxTokens(config.getMaxTokens());
-        }
-        if (config.getThinking() != null) {
-            builder.thinking(config.getThinking());
-        }
-        return builder.build();
-    }
-
-    /**
-     * 尝试从LLM输出解析工具调用
-     */
-    private JsonNode parseToolCall(String response) {
-        try {
-            String trimmed = response.trim();
-            // 尝试提取JSON块
-            if (trimmed.contains("```json")) {
-                int start = trimmed.indexOf("```json") + 7;
-                int end = trimmed.indexOf("```", start);
-                if (end > start) {
-                    trimmed = trimmed.substring(start, end).trim();
-                }
-            }
-            if (trimmed.startsWith("{")) {
-                JsonNode node = objectMapper.readTree(trimmed);
-                if (node.has("tool") && node.has("parameters")) {
-                    return node;
-                }
-            }
-        } catch (Exception ignored) {
-        }
-        return null;
-    }
-
-    /**
-     * 执行MCP工具调用
-     */
-    private JsonNode executeTool(String toolName, JsonNode params) {
-        try {
-            Optional<McpToolExecutor> executor = mcpToolRegistry.getExecutor(toolName);
-            if (executor.isEmpty()) {
-                return objectMapper.createObjectNode()
-                        .put("error", "工具未找到: " + toolName);
-            }
-            Map<String, Object> paramMap = objectMapper.convertValue(params, Map.class);
-            McpSchema.CallToolResult result = executor.get().execute(paramMap);
-            if (result.isError() != null && result.isError()) {
-                return objectMapper.createObjectNode()
-                        .put("error", "工具执行失败")
-                        .put("toolName", toolName);
-            }
-            return objectMapper.valueToTree(result);
-        } catch (Exception e) {
-            return objectMapper.createObjectNode()
-                    .put("error", e.getMessage())
-                    .put("toolName", toolName);
-        }
-    }
-
-    private JsonNode extractStructuredOutput(String output) {
-        try {
-            String trimmed = output.trim();
-            if (trimmed.contains("```json")) {
-                int start = trimmed.indexOf("```json") + 7;
-                int end = trimmed.indexOf("```", start);
-                if (end > start) {
-                    return objectMapper.readTree(trimmed.substring(start, end).trim());
-                }
-            }
-            if (trimmed.startsWith("{")) {
-                return objectMapper.readTree(trimmed);
-            }
-        } catch (Exception ignored) {
-        }
-        return objectMapper.createObjectNode().put("raw", output);
+        return sb.toString();
     }
 
     private void saveMemory(AgentExecutionContext context, AgentConfig config,
-                            List<ChatMessage> messages, String output) {
+                            com.nageoffer.ai.ragent.agent.action.domain.ActionResult result) {
         try {
+            String output = result.getOutput() != null ? result.getOutput().toString() : "";
             agentMemoryService.saveMessage(context.getInstanceId(), context.getNodeInstanceId(),
                     config.getAgentKey(), context.getRoundNumber(), "USER",
                     context.getOriginalInput().toString());
@@ -289,10 +193,5 @@ public class AgentRunner {
         } catch (Exception e) {
             log.warn("Agent记忆保存失败: agentKey={}", config.getAgentKey(), e);
         }
-    }
-
-    private int estimateTokens(String text) {
-        if (text == null) return 0;
-        return (int) (text.length() * 0.3);
     }
 }
