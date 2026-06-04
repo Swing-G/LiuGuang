@@ -325,6 +325,7 @@ export function AgentTeamManagePage() {
                       <option value="REACT">ReAct - 思考行动循环</option>
                       <option value="PLAN_EXECUTE">Plan-Execute - 规划执行</option>
                       <option value="PIPELINE">Pipeline - 直接调用</option>
+                    </select>
                   </div>
                 </div>
                 <div>

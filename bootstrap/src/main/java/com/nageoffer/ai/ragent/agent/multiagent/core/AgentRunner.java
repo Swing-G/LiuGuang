@@ -123,6 +123,9 @@ public class AgentRunner {
                 toolNode.put("name", toolName);
                 toolNode.put("actionType", "MCP_TOOL");
                 toolNode.set("parameters", objectMapper.createObjectNode());
+                ObjectNode toolConfig = objectMapper.createObjectNode();
+                toolConfig.put("toolName", toolName);
+                toolNode.set("config", toolConfig);
                 allowedTools.add(toolNode);
             }
             nodeConfig.set("allowedTools", allowedTools);
