@@ -54,6 +54,7 @@ public class StreamChatEventHandler implements StreamCallback {
     private long thinkingStartMs;
     private int thinkingDurationSeconds;
     private final java.util.List<String> statusLogs = new java.util.ArrayList<>();
+    private final com.nageoffer.ai.ragent.rag.service.filter.ContentFilter contentFilter;
 
     /**
      * 使用参数对象构造（推荐）
@@ -71,6 +72,7 @@ public class StreamChatEventHandler implements StreamCallback {
 
         // 计算配置
         this.messageChunkSize = resolveMessageChunkSize(params.getModelProperties());
+        this.contentFilter = params.getContentFilter();
         this.sendTitleOnComplete = shouldSendTitle();
 
         // 初始化（发送初始事件、注册任务）
@@ -126,12 +128,10 @@ public class StreamChatEventHandler implements StreamCallback {
 
     @Override
     public void onContent(String chunk) {
-        if (taskManager.isCancelled(taskId)) {
-            return;
-        }
-        if (StrUtil.isBlank(chunk)) {
-            return;
-        }
+        if (taskManager.isCancelled(taskId)) return;
+        if (StrUtil.isBlank(chunk)) return;
+        if (contentFilter != null) chunk = contentFilter.filter(chunk);
+        if (StrUtil.isBlank(chunk)) return;
         if (thinkingStartMs > 0 && thinkingDurationSeconds == 0) {
             thinkingDurationSeconds = Math.max(1, Math.round((System.currentTimeMillis() - thinkingStartMs) / 1000.0f));
         }

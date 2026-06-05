@@ -37,6 +37,7 @@ public class StreamCallbackFactory {
     private final ConversationMemoryService memoryService;
     private final ConversationGroupService conversationGroupService;
     private final StreamTaskManager taskManager;
+    private final com.nageoffer.ai.ragent.rag.service.filter.ContentFilter contentFilter;
 
     /**
      * 创建聊天事件处理器
@@ -57,6 +58,7 @@ public class StreamCallbackFactory {
                 .memoryService(memoryService)
                 .conversationGroupService(conversationGroupService)
                 .taskManager(taskManager)
+                .contentFilter(contentFilter)
                 .build();
 
         return new StreamChatEventHandler(params);

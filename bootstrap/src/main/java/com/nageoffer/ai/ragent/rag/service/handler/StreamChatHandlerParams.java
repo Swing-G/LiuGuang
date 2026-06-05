@@ -66,4 +66,9 @@ public class StreamChatHandlerParams {
      * 任务管理器
      */
     private final StreamTaskManager taskManager;
+
+    /**
+     * 内容过滤器
+     */
+    private final com.nageoffer.ai.ragent.rag.service.filter.ContentFilter contentFilter;
 }

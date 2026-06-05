@@ -29,6 +29,7 @@ export interface Message {
   isDeepThinking?: boolean;
   isThinking?: boolean;
   statusLogs?: string[];
+  predictions?: string[];
   createdAt?: string;
   feedback?: FeedbackValue;
   status?: MessageStatus;

@@ -52,6 +52,7 @@ interface ChatState {
   appendStreamContent: (delta: string) => void;
   appendThinkingContent: (delta: string) => void;
   submitFeedback: (messageId: string, feedback: FeedbackValue) => Promise<void>;
+  triggerPrediction: (assistantId: string) => void;
 }
 
 function mapVoteToFeedback(vote?: number | null): FeedbackValue {
@@ -407,8 +408,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
               content: message.content + suffix,
               status: "cancelled",
               isThinking: false,
-              thinkingDuration:
-                message.thinkingDuration ?? computeThinkingDuration(state.thinkingStartAt)
+              thinkingDuration: message.thinkingDuration ?? computeThinkingDuration(state.thinkingStartAt)
             };
           }),
           isStreaming: false,
@@ -479,6 +479,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
       handlers.onError?.(error as Error);
     } finally {
+      // 异步生成预测问题
+      get().triggerPrediction(assistantId);
       if (get().streamingMessageId === assistantId) {
         set({
           isStreaming: false,
@@ -561,5 +563,45 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }));
       toast.error((error as Error).message || "反馈保存失败");
     }
+  },
+  triggerPrediction: (assistantId) => {
+    const state = get();
+    const idx = state.messages.findIndex(m => m.id === assistantId);
+    if (idx <= 0) return;
+    const userMsg = state.messages[idx - 1];
+    if (userMsg.role !== "user") return;
+    const assistantMsg = state.messages[idx];
+    if (!assistantMsg.content) return;
+    const question = userMsg.content;
+    const reply = assistantMsg.content;
+    fetchPredictions(question, reply).then(preds => {
+      if (preds.length > 0) {
+        set(s => ({
+          messages: s.messages.map(m => m.id === assistantId ? { ...m, predictions: preds } : m)
+        }));
+      }
+    });
   }
 }));
+
+/** 通过现有 chat API 生成预测问题（纯前端，不动后端） */
+async function fetchPredictions(question: string, reply: string): Promise<string[]> {
+  try {
+    const prompt = `基于以下对话，预测用户接下来可能问的3个问题。只返回JSON数组，不要其他内容:\n用户: ${question}\n助手: ${reply.substring(0, 500)}\n\n格式: ["问题1","问题2","问题3"]`;
+    const token = storage.getToken();
+    const resp = await fetch(`${import.meta.env.VITE_API_BASE_URL || ""}/rag/v3/chat?question=${encodeURIComponent(prompt)}&mode=RAG`,{
+      headers: { ...(token ? { Authorization: token } : {}), Accept: "text/event-stream" }
+    });
+    if (!resp.ok) return [];
+    const text = await resp.text();
+    // 从 SSE 或纯文本中提取 JSON 数组
+    const lines = text.split("\n");
+    const dataLines = lines.filter(l => l.startsWith("data:")).map(l => l.slice(5).trim());
+    const candidate = dataLines.length > 0 ? dataLines.join("") : text;
+    const match = candidate.match(/\[[\s\S]*?\]/);
+    if (match) {
+      try { return JSON.parse(match[0]); } catch { /* fall through */ }
+    }
+    return [];
+  } catch { return []; }
+}

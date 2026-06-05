@@ -589,14 +589,27 @@ public class WorkflowChatRouter {
     }
 
     private void completeWithAssistantMessage(String conversationId, String userId, StreamCallback callback, String content) {
-        // 流式输出：按段落分块发送，模拟实时打字效果
-        String[] paragraphs = content.split("\n\n");
-        for (int i = 0; i < paragraphs.length; i++) {
-            String chunk = paragraphs[i];
-            if (i < paragraphs.length - 1) chunk += "\n\n";
-            callback.onContent(chunk);
+        // 打字效果：每次输出 15 字符，模拟 real-time 流式
+        int chunkSize = 15;
+        int pos = 0;
+        while (pos < content.length()) {
+            int end = Math.min(pos + chunkSize, content.length());
+            // 尽量在标点或空格处截断
+            if (end < content.length()) {
+                char next = content.charAt(end);
+                if (Character.isLetterOrDigit(next) || next > 127) {
+                    // 找最近的标点或空格作为断点
+                    int lookBack = end - 1;
+                    while (lookBack > pos && Character.isLetterOrDigit(content.charAt(lookBack)) && content.charAt(lookBack) > 127) {
+                        lookBack--;
+                    }
+                    if (lookBack > pos) end = lookBack;
+                }
+            }
+            callback.onContent(content.substring(pos, end));
+            pos = end;
             try {
-                Thread.sleep(60); // 段落间短暂停顿
+                Thread.sleep(40);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;

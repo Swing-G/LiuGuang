@@ -96,16 +96,7 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
         ) : null}
         <div className="space-y-2">
           {(displayLogs && displayLogs.length > 0) && (
-            <details className="mb-3" open={message.status === "streaming"}>
-              <summary className="text-xs text-slate-400 cursor-pointer select-none">
-                思考过程 ({displayLogs.length})
-              </summary>
-              <div className="mt-2 space-y-1 pl-2 border-l-2 border-slate-200 max-h-48 overflow-auto">
-                {displayLogs.map((log, i) => (
-                  <div key={i} className="text-xs text-slate-500 font-mono">{log}</div>
-                ))}
-              </div>
-            </details>
+            <ThinkingLogs logs={displayLogs} isStreaming={message.status === "streaming"} />
           )}
           {isWaiting ? (
             <div className="ai-wait" aria-label="思考中">
@@ -120,6 +111,21 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
           {message.status === "error" ? (
             <p className="text-xs text-rose-500">生成已中断。</p>
           ) : null}
+          {(message.predictions && message.predictions.length > 0) && (
+            <div className="mt-3 pt-3 border-t border-slate-200">
+              <p className="text-xs text-slate-400 mb-2">你可能还想问：</p>
+              <div className="flex flex-wrap gap-2">
+                {message.predictions.map((p, i) => (
+                  <button key={i}
+                    onClick={() => useChatStore.getState().sendMessage(p)}
+                    className="text-xs text-left px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:border-slate-300 transition"
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {showFeedback ? (
             <FeedbackButtons
               messageId={message.id}
@@ -133,3 +139,18 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
     </div>
   );
 });
+
+function ThinkingLogs({ logs, isStreaming }: { logs: string[]; isStreaming: boolean }) {
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [logs]);
+  return (
+    <details className="mb-3" open={isStreaming}>
+      <summary className="text-xs text-slate-400 cursor-pointer select-none">思考过程 ({logs.length})</summary>
+      <div ref={scrollRef} className="mt-2 space-y-1 pl-2 border-l-2 border-slate-200 max-h-48 overflow-auto scroll-smooth">
+        {logs.map((log, i) => (<div key={i} className="text-xs text-slate-500 font-mono">{log}</div>))}
+      </div>
+    </details>
+  );
+}
