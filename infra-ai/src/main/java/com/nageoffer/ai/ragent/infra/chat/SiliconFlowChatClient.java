@@ -25,6 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import org.springframework.stereotype.Service;
 
+import org.springframework.beans.factory.annotation.Qualifier;
+
 import java.util.concurrent.Executor;
 
 @Slf4j
@@ -33,7 +35,7 @@ public class SiliconFlowChatClient extends AbstractOpenAIStyleChatClient {
 
     public SiliconFlowChatClient(OkHttpClient syncHttpClient,
                                  OkHttpClient streamingHttpClient,
-                                 Executor modelStreamExecutor) {
+                                 @Qualifier("modelStreamExecutor") Executor modelStreamExecutor) {
         super(syncHttpClient, streamingHttpClient, modelStreamExecutor);
     }
 

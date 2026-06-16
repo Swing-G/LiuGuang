@@ -1,5 +1,4 @@
-# Maven
-**/target/
+# Maven（保留 bootstrap/target 和 mcp-server/target，Docker 需要 JAR）
 **/.mvn/
 
 # Node
