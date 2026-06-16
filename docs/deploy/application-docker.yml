@@ -98,7 +98,7 @@ rag:
   # RAG 默认配置
   # =========================================================================
   default:
-    chat-model: deepseek-v3
+    chat-model: deepseek-v4-flash
     embedding-model: bge-m3
     top-k: 5
     similarity-threshold: 0.7
@@ -172,20 +172,26 @@ ai:
     siliconflow:
       url: https://api.siliconflow.cn
       apiKey: "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"    # ← 替换为你的 SiliconFlow Key
-    ollama:
-      url: http://host.docker.internal:11434           # 如果 Ollama 在宿主机
-      apiKey: ""
+      endpoints:
+        chat: /v1/chat/completions
+        embedding: /v1/embeddings
+        rerank: /v1/rerank
+
     bailian:
-      url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      url: https://dashscope.aliyuncs.com
       apiKey: "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"    # ← 替换为你的 BaiLian Key
+      endpoints:
+        chat: /compatible-mode/v1/chat/completions
+        embedding: /compatible-mode/v1/embeddings
+        rerank: /compatible-mode/v1/rerank
 
   # ---- Chat 模型 ----
   chat:
-    defaultModel: deepseek-v3
+    defaultModel: deepseek-v4-flash
     candidates:
-      - id: deepseek-v3
+      - id: deepseek-v4-flash
         provider: siliconflow
-        model: Pro/deepseek-ai/DeepSeek-V3
+        model: deepseek-ai/DeepSeek-V4-Flash
         priority: 1
         enabled: true
       - id: qwen-plus
