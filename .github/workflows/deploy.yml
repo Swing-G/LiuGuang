@@ -1,6 +1,6 @@
 # ============================================================================
 # GitHub Actions 自动部署 — 流光 (Ragent)
-# 仓库: https://github.com/Swing-G/LiuGuang
+# 仓库: https://github.com/Swing-G/LuminaGraph
 # Runner: self-hosted, label=ragent-server, 路径=/opt/ragent
 # ============================================================================
 

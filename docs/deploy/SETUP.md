@@ -1,7 +1,7 @@
 # 流光 (Ragent) — 服务器部署手册
 
 > 服务器: 117.72.216.56 / Ubuntu 22.04 / 8GB / 2核  
-> 仓库: https://github.com/Swing-G/LiuGuang  
+> 仓库: https://github.com/Swing-G/LuminaGraph  
 > 架构: Docker Compose 部署（基础设施 + 应用全部容器化）  
 > 已有项目: zhiguang（systemd 直跑 JAR，互不影响）
 
@@ -57,7 +57,7 @@ mkdir -p /opt/ragent-config   /var/www/ragent
 
 ```bash
 cd /opt
-git clone git@github.com:Swing-G/LiuGuang.git ragent
+git clone git@github.com:Swing-G/LuminaGraph.git ragent
 cd /opt/ragent
 git checkout main
 ```
@@ -171,8 +171,8 @@ echo "." > .auto_update
 
 export RUNNER_ALLOW_RUNASROOT=1
 
-# 去 https://github.com/Swing-G/LiuGuang → Settings → Actions → Runners → New self-hosted runner 拿 token
-./config.sh --url https://github.com/Swing-G/LiuGuang --token XXXX --name ragent-server --labels ragent-server
+# 去 https://github.com/Swing-G/LuminaGraph → Settings → Actions → Runners → New self-hosted runner 拿 token
+./config.sh --url https://github.com/Swing-G/LuminaGraph --token XXXX --name ragent-server --labels ragent-server
 
 sudo ./svc.sh install
 sudo ./svc.sh start
@@ -228,7 +228,7 @@ docker compose down
 docker compose restart app
 
 # Runner 状态
-sudo systemctl status actions.runner.Swing-G-LiuGuang.ragent-server
+sudo systemctl status actions.runner.Swing-G-LuminaGraph.ragent-server
 ```
 
 ### 配置变更流程

@@ -248,7 +248,7 @@ export function AdminLayout() {
 
   useEffect(() => {
     let active = true;
-    fetch("https://api.github.com/repos/Swing-G/LiuGuang")
+    fetch("https://api.github.com/repos/Swing-G/LuminaGraph")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!active) return;
