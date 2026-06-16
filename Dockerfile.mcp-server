@@ -1,0 +1,15 @@
+# ============================================================================
+# 流光 (Ragent) — MCP Server 镜像（独立 JAR，端口 9099）
+# 构建前提: mvn clean package -pl mcp-server -DskipTests 已完成
+# ============================================================================
+
+FROM eclipse-temurin:17-jre
+
+WORKDIR /app
+
+COPY mcp-server/target/mcp-server-*.jar /app/mcp-server.jar
+
+EXPOSE 9099
+
+ENTRYPOINT exec java $JAVA_OPTS \
+  -jar /app/mcp-server.jar

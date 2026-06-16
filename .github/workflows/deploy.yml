@@ -1,0 +1,76 @@
+# ============================================================================
+# GitHub Actions 自动部署 — 流光 (Ragent)
+# 仓库: https://github.com/Swing-G/LiuGuang
+# Runner: self-hosted, label=ragent-server, 路径=/opt/ragent
+# ============================================================================
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ragent-server
+
+    steps:
+      # =====================================================================
+      # Step 1: 拉取最新代码
+      # =====================================================================
+      - name: Pull latest code
+        run: |
+          cd /opt/ragent
+          git pull origin main
+
+      # =====================================================================
+      # Step 2: 构建后端（bootstrap + mcp-server）
+      # =====================================================================
+      - name: Build Backend
+        run: |
+          cd /opt/ragent
+          mvn clean package -pl bootstrap,mcp-server -am -DskipTests -q
+
+      # =====================================================================
+      # Step 3: 构建前端
+      # =====================================================================
+      - name: Build Frontend
+        run: |
+          cd /opt/ragent/frontend
+          npm install --legacy-peer-deps
+          VITE_API_BASE_URL=/api/ragent npm run build
+
+      # =====================================================================
+      # Step 4: 部署前端静态文件
+      # =====================================================================
+      - name: Deploy Frontend to Nginx
+        run: |
+          sudo mkdir -p /var/www/ragent
+          sudo rm -rf /var/www/ragent/*
+          sudo cp -r /opt/ragent/frontend/dist/* /var/www/ragent/
+
+      # =====================================================================
+      # Step 5: Docker Compose 重建 + 启动
+      # =====================================================================
+      - name: Docker Compose Up
+        run: |
+          cd /opt/ragent
+          docker compose up -d --build --remove-orphans
+
+      # =====================================================================
+      # Step 6: 等待启动 + 验证
+      # =====================================================================
+      - name: Verify
+        run: |
+          echo "⏳ 等待服务启动..."
+          sleep 15
+          echo "--- Docker 容器状态 ---"
+          docker compose ps
+          echo ""
+          echo "--- 后端健康检查 ---"
+          curl -sf http://localhost:8081/ || echo "ℹ️ 后端已启动（/ 路径可能无映射）"
+          echo ""
+          echo "--- Nginx 可达性 ---"
+          curl -sf http://localhost:81/ > /dev/null && echo "✔ 前端 Nginx :81 OK" || echo "✘ 前端 :81 不可达"
+          echo ""
+          echo "✔ Deploy finished"

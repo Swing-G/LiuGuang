@@ -1,0 +1,218 @@
+# ============================================================================
+# 流光 (Ragent) — Docker Compose 部署
+# 服务器: 117.72.216.56 / Ubuntu 22.04 / 8GB
+# 注意: 所有宿主机端口已避开 zhiguang 占用的端口
+# ============================================================================
+
+services:
+
+  # =========================================================================
+  # PostgreSQL 16 + pgvector
+  # =========================================================================
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: ragent-postgres
+    ports:
+      - "5433:5432"                              # 避开可能存在的 PG 5432
+    environment:
+      POSTGRES_DB: ragent
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - ragent
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ragent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =========================================================================
+  # Redis (独立实例，和宿主机 Redis :6379 隔离)
+  # =========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: ragent-redis
+    ports:
+      - "6380:6379"                              # 避开宿主机 Redis 6379
+    command: redis-server --requirepass "123456" --appendonly yes
+    volumes:
+      - redisdata:/data
+    networks:
+      - ragent
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "123456", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =========================================================================
+  # RocketMQ NameServer
+  # =========================================================================
+  rmqnamesrv:
+    image: apache/rocketmq:5.2.0
+    container_name: ragent-rmqnamesrv
+    ports:
+      - "19876:9876"
+    environment:
+      JAVA_OPT_EXT: "-Xms256m -Xmx400m"
+    command: sh mqnamesrv
+    networks:
+      - ragent
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "grep -q 'The Name Server boot success' /home/rocketmq/logs/rocketmqlogs/namesrv.log || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # =========================================================================
+  # RocketMQ Broker (含 Proxy)
+  # =========================================================================
+  rmqbroker:
+    image: apache/rocketmq:5.2.0
+    container_name: ragent-rmqbroker
+    ports:
+      - "10912:10912"
+      - "10911:10911"
+      - "10909:10909"
+    environment:
+      NAMESRV_ADDR: "rmqnamesrv:9876"
+      JAVA_OPT_EXT: "-Xms512m -Xmx512m"
+    depends_on:
+      rmqnamesrv:
+        condition: service_healthy
+    command:
+      - sh
+      - -c
+      - |
+        cat > /home/rocketmq/rocketmq-5.2.0/conf/broker.conf << EOF
+        brokerClusterName = DefaultCluster
+        brokerName = broker-a
+        brokerId = 0
+        deleteWhen = 04
+        fileReservedTime = 48
+        brokerRole = ASYNC_MASTER
+        flushDiskType = ASYNC_FLUSH
+        timerMaxDelaySec = 31622400
+        EOF
+        sh mqbroker --enable-proxy \
+          -c /home/rocketmq/rocketmq-5.2.0/conf/broker.conf
+    networks:
+      - ragent
+    restart: unless-stopped
+
+  # =========================================================================
+  # RocketMQ Dashboard
+  # =========================================================================
+  dashboard:
+    image: apacherocketmq/rocketmq-dashboard:2.1.0
+    container_name: ragent-dashboard
+    network_mode: "service:rmqbroker"            # 共享 broker 网络栈
+    environment:
+      JAVA_OPTS: >-
+        -Xms256m -Xmx512m
+        -XX:MaxMetaspaceSize=256m
+        -Drocketmq.config.enableDashBoardCollect=false
+        -Drocketmq.namesrv.addr=rmqnamesrv:9876
+        -Dserver.port=8082
+    depends_on:
+      rmqbroker:
+        condition: service_started
+    restart: unless-stopped
+
+  # =========================================================================
+  # RustFS (S3 兼容文件存储)
+  # =========================================================================
+  rustfs:
+    image: rustfs/rustfs:1.0.0-alpha.72
+    container_name: ragent-rustfs
+    ports:
+      - "9002:9000"                              # API 端口
+      - "9003:9001"                              # Console 端口
+    volumes:
+      - rustfsdata:/data
+    environment:
+      RUSTFS_ACCESS_KEY: rustfsadmin
+      RUSTFS_SECRET_KEY: rustfsadmin
+      RUSTFS_CONSOLE_ENABLE: "true"
+    command:
+      - --address
+      - :9000
+      - --console-enable
+      - --access-key
+      - rustfsadmin
+      - --secret-key
+      - rustfsadmin
+      - /data
+    networks:
+      - ragent
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # =========================================================================
+  # MCP Server (演示工具提供方 + 知识搜索工具)
+  # =========================================================================
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp-server
+    container_name: ragent-mcp-server
+    ports:
+      - "9100:9099"
+    environment:
+      JAVA_OPTS: "-Xms128m -Xmx256m"
+    networks:
+      - ragent
+    restart: unless-stopped
+
+  # =========================================================================
+  # Spring Boot 主应用
+  # =========================================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ragent-app
+    ports:
+      - "8081:8080"
+    environment:
+      JAVA_OPTS: "-Xms256m -Xmx512m -XX:+UseG1GC"
+    volumes:
+      - /opt/ragent-config/application.yml:/app/config/application.yml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"       # 允许容器访问宿主机服务（如 Ollama）
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rmqnamesrv:
+        condition: service_healthy
+      rmqbroker:
+        condition: service_started
+    networks:
+      - ragent
+    restart: unless-stopped
+
+# ===========================================================================
+# Named Volumes (持久化数据)
+# ===========================================================================
+volumes:
+  pgdata:
+  redisdata:
+  rustfsdata:
+
+# ===========================================================================
+# 自定义网络
+# ===========================================================================
+networks:
+  ragent:
+    driver: bridge
