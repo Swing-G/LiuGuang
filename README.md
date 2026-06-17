@@ -28,7 +28,7 @@
 
 **核心思路**：Workflow DAG 作为宏观流程骨架，决定任务分几步、先做什么后做什么；Multi-Agent 作为微观执行肌肉，在某个步骤内启动多个拥有独立角色、目标和工具的 Agent 并行或协作执行。
 
-> 在线体验：http://liuguangyf.top（http://117.72.216.56:81/）  
+> 在线体验：http://liuguangyf.top | http://117.72.216.56:81/   
 > 代码仓库：https://github.com/Swing-G/LuminaGraph  
 > 原始项目：https://github.com/nageoffer/ragent
 
