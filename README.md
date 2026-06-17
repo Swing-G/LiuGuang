@@ -1,11 +1,11 @@
-<p align="center">
-  <a href="https://github.com/Swing-G/LiuGuang">
+<!-- <p align="center">
+  <a href="https://github.com/Swing-G/LuminaGraph">
     <picture>
       <source srcset="assets/ragent-ai-banner.png">
       <img src="assets/ragent-ai-banner.png" alt="LiuGuang - Multi-Agent Orchestration">
     </picture>
   </a>
-</p>
+</p> -->
 
 <p align="center">
   <strong>流光 — Multi-Agent 工作流编排系统</strong><br/>
@@ -28,8 +28,8 @@
 
 **核心思路**：Workflow DAG 作为宏观流程骨架，决定任务分几步、先做什么后做什么；Multi-Agent 作为微观执行肌肉，在某个步骤内启动多个拥有独立角色、目标和工具的 Agent 并行或协作执行。
 
-> 在线体验：http://liuguangyf.top  
-> 代码仓库：https://github.com/Swing-G/LiuGuang  
+> 在线体验：http://liuguangyf.top（http://117.72.216.56:81/）  
+> 代码仓库：https://github.com/Swing-G/LuminaGraph  
 > 原始项目：https://github.com/nageoffer/ragent
 
 ---
@@ -67,13 +67,17 @@
 | **用户端** | `/chat` | 选择 Workflow 模式发起对话，实时查看 Agent 执行过程，获取分析结果 |
 
 <!-- 截图占位：首页 / 登录页 -->
-> 📸 *[截图1] 系统首页*
+<img width="3200" height="1730" alt="image" src="https://github.com/user-attachments/assets/2e74715d-afc0-4935-8a3c-d3858ca287dd" />
+
 
 <!-- 截图占位：管理员 Dashboard 概览 -->
-> 📸 *[截图2] 管理员 Dashboard*
+<img width="3200" height="1730" alt="image" src="https://github.com/user-attachments/assets/6cab046f-66d2-469a-a36f-f7fbdcf1ebcc" />
+
 
 <!-- 截图占位：用户聊天页面全貌 -->
-> 📸 *[截图3] 用户聊天页面 — WORKFLOW 模式 + 提示词模板*
+<img width="3200" height="1730" alt="image" src="https://github.com/user-attachments/assets/b8c4ddcf-4d92-4bbf-a7d4-22a71b183539" />
+
+<img width="3200" height="1730" alt="image" src="https://github.com/user-attachments/assets/95d71862-1d87-46de-aea6-e9ed2108271f" />
 
 ---
 
@@ -115,10 +119,13 @@ Agent Team 是多 Agent 协作的基本单位。一个 Team 定义了：
 | **HIERARCHICAL（层级）** | Leader 拆解任务 → 分派给 Worker 并行执行 → Leader 合成最终答案（三阶段） | 复杂任务：Leader 规划，Worker 干活，Leader 汇总 |
 
 <!-- 截图占位：Agent Team 创建/编辑页面，展示拓扑下拉选择 -->
-> 📸 *[截图4] Agent Team 管理页 — 左侧 Team 列表，右侧编辑表单*
+<img width="3200" height="1730" alt="image" src="https://github.com/user-attachments/assets/a315731b-218f-4c1a-a1f9-aaa13086a1bc" />
+
 
 <!-- 截图占位：添加 Agent 表单展开状态 -->
-> 📸 *[截图5] 添加 Agent 表单 — role/目标/工具/策略/记忆/Lieder 配置*
+<img width="3200" height="1730" alt="image" src="https://github.com/user-attachments/assets/216bb36d-916e-4b90-974b-baf944a03e49" />
+
+<img width="3200" height="1730" alt="image" src="https://github.com/user-attachments/assets/3d380f17-81c3-456f-a169-d9e1d9ddb1fe" />
 
 #### 合并策略（随拓扑自动过滤）
 
@@ -156,7 +163,8 @@ Agent Team 是多 Agent 协作的基本单位。一个 Team 定义了：
 这是系统的核心编排工具，分 4 步完成 Workflow 创建。
 
 <!-- 截图占位：可视化构建器 Step 0 — 模板选择 -->
-> 📸 *[截图6] Step 0 — 模板选择 + 已创建 Workflow 列表*
+<img width="3200" height="1730" alt="image" src="https://github.com/user-attachments/assets/e216128f-73b1-4b4b-ac15-e09c085d835d" />
+
 
 #### Step 0：选择起点
 
@@ -169,7 +177,8 @@ Agent Team 是多 Agent 协作的基本单位。一个 Team 定义了：
 #### Step 1：节点编排
 
 <!-- 截图占位：Step 1 — 节点编排 -->
-> 📸 *[截图7] Step 1 — 基本信息表单 + 节点列表 + 每个节点的配置卡片*
+<img width="3200" height="1730" alt="image" src="https://github.com/user-attachments/assets/b863e967-edbf-427a-ae6f-5b27bae93a81" />
+
 
 先填写基本信息（名称、类型、状态、描述），然后添加和配置节点。
 
@@ -217,7 +226,8 @@ Agent Team 是多 Agent 协作的基本单位。一个 Team 定义了：
 | **AGENT_TEAM** | 🔥 多 Agent 协作——选择此策略后出现 Team 下拉选择器 |
 
 <!-- 截图占位：节点类型下拉 + 策略下拉 + AGENT_TEAM 选 Team -->
-> 📸 *[截图8] ACTION 节点的策略下拉 — 选 AGENT_TEAM 后出现 Team 选择器*
+<img width="3200" height="1730" alt="image" src="https://github.com/user-attachments/assets/6a7c9708-b808-4d23-a3b9-7c1746ee1447" />
+
 
 **EVALUATOR 节点**额外配置：
 
@@ -232,7 +242,8 @@ Agent Team 是多 Agent 协作的基本单位。一个 Team 定义了：
 #### Step 2：连线定义
 
 <!-- 截图占位：Step 2 — 连线编辑 + 流转预览 -->
-> 📸 *[截图9] Step 2 — 连线编辑（源节点→目标节点→边类型） + 流转预览图*
+<img width="3200" height="1730" alt="image" src="https://github.com/user-attachments/assets/779c70ec-0e35-489e-91d6-9ffcfb736b41" />
+
 
 每条边定义节点间的流转关系：
 
@@ -246,7 +257,8 @@ Agent Team 是多 Agent 协作的基本单位。一个 Team 定义了：
 #### Step 3：保存与运行
 
 <!-- 截图占位：Step 3 — 保存 + 运行 + 历史记录 -->
-> 📸 *[截图10] Step 3 — 保存 Workflow + 输入 JSON 运行 + 查看节点输出和运行历史*
+<img width="3200" height="1730" alt="image" src="https://github.com/user-attachments/assets/344c2dae-2dea-4e2c-9a3b-7bbda04b0dfa" />
+
 
 填写测试输入（JSON），点击"运行 Workflow"，右侧实时显示每个节点的执行状态、输出和耗时。底部显示历史运行记录，点击可查看详情。
 
@@ -257,7 +269,8 @@ Agent Team 是多 Agent 协作的基本单位。一个 Team 定义了：
 **路径**：管理后台 → Workflow 管理 → **全景视图**
 
 <!-- 截图占位：全景视图 — 完整 DAG 流转 + AGENT_TEAM 展开 -->
-> 📸 *[截图11] 全景视图 — 节点流转图 + AGENT_TEAM 展开显示每个 Agent 详情*
+<img width="3200" height="1730" alt="image" src="https://github.com/user-attachments/assets/a2f273b8-83c6-4d0b-9759-7fe1df55a617" />
+
 
 选择 Workflow 后展示：
 - **横向流转图**：节点按 edges 推导演示序列排列，箭头标出边类型
@@ -274,7 +287,9 @@ Agent Team 是多 Agent 协作的基本单位。一个 Team 定义了：
 结构化 Skill 是可复用的业务知识包，以 Markdown 文件形式存储在 `resources/skills/` 目录下。
 
 <!-- 截图占位：Skill 管理页 — 列表 + 编辑器 + 进化建议审核面板 -->
-> 📸 *[截图12] Skill 管理页 — 左侧 Skill 列表，右侧 SOP/规则/模板编辑器，底部进化建议审核面板*
+<img width="3200" height="1730" alt="image" src="https://github.com/user-attachments/assets/9d6310e4-74a5-48fa-9bd4-5d3aab457038" />
+
+<img width="3200" height="1730" alt="image" src="https://github.com/user-attachments/assets/f77f4962-354a-4a39-a0e0-7c1229967e09" />
 
 **Skill 编辑区**包含：
 
@@ -307,7 +322,8 @@ Agent Team 是多 Agent 协作的基本单位。一个 Team 定义了：
 **路径**：`/chat` → 选择 WORKFLOW 模式 → 选择已绑定的 Workflow
 
 <!-- 截图占位：对话页面 — 选择 WORKFLOW 模式 + 提示词模板 + 思考过程展开 -->
-> 📸 *[截图13] 对话页面 — WORKFLOW 模式下拉 + 提示词模板 + 思考过程实时展开*
+<img width="3200" height="1730" alt="image" src="https://github.com/user-attachments/assets/3cfe891c-fb9b-486f-8439-e530800928aa" />
+
 
 ### 3.1 实时思考过程
 
@@ -521,5 +537,5 @@ ragent/
 ## 联系方式
 
 - 在线体验：http://liuguangyf.top
-- 代码仓库：https://github.com/Swing-G/LiuGuang
+- 代码仓库：https://github.com/Swing-G/LuminaGraph
 - 原始项目：https://github.com/nageoffer/ragent
